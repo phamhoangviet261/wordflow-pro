@@ -13,6 +13,9 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppVocabularyRouteImport } from './routes/_app.vocabulary'
 import { Route as AppVocabSetsRouteImport } from './routes/_app.vocab-sets'
+import { Route as AppStoreRouteImport } from './routes/_app.store'
+import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
+import { Route as AppGamesRouteImport } from './routes/_app.games'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -33,13 +36,34 @@ const AppVocabSetsRoute = AppVocabSetsRouteImport.update({
   path: '/vocab-sets',
   getParentRoute: () => AppRoute,
 } as any)
+const AppStoreRoute = AppStoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLeaderboardRoute = AppLeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGamesRoute = AppGamesRouteImport.update({
+  id: '/games',
+  path: '/games',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/games': typeof AppGamesRoute
+  '/leaderboard': typeof AppLeaderboardRoute
+  '/store': typeof AppStoreRoute
   '/vocab-sets': typeof AppVocabSetsRoute
   '/vocabulary': typeof AppVocabularyRoute
 }
 export interface FileRoutesByTo {
+  '/games': typeof AppGamesRoute
+  '/leaderboard': typeof AppLeaderboardRoute
+  '/store': typeof AppStoreRoute
   '/vocab-sets': typeof AppVocabSetsRoute
   '/vocabulary': typeof AppVocabularyRoute
   '/': typeof AppIndexRoute
@@ -47,16 +71,33 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/_app/games': typeof AppGamesRoute
+  '/_app/leaderboard': typeof AppLeaderboardRoute
+  '/_app/store': typeof AppStoreRoute
   '/_app/vocab-sets': typeof AppVocabSetsRoute
   '/_app/vocabulary': typeof AppVocabularyRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/vocab-sets' | '/vocabulary'
+  fullPaths:
+    | '/'
+    | '/games'
+    | '/leaderboard'
+    | '/store'
+    | '/vocab-sets'
+    | '/vocabulary'
   fileRoutesByTo: FileRoutesByTo
-  to: '/vocab-sets' | '/vocabulary' | '/'
-  id: '__root__' | '/_app' | '/_app/vocab-sets' | '/_app/vocabulary' | '/_app/'
+  to: '/games' | '/leaderboard' | '/store' | '/vocab-sets' | '/vocabulary' | '/'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_app/games'
+    | '/_app/leaderboard'
+    | '/_app/store'
+    | '/_app/vocab-sets'
+    | '/_app/vocabulary'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,16 +134,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVocabSetsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/store': {
+      id: '/_app/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof AppStoreRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/leaderboard': {
+      id: '/_app/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof AppLeaderboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/games': {
+      id: '/_app/games'
+      path: '/games'
+      fullPath: '/games'
+      preLoaderRoute: typeof AppGamesRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppGamesRoute: typeof AppGamesRoute
+  AppLeaderboardRoute: typeof AppLeaderboardRoute
+  AppStoreRoute: typeof AppStoreRoute
   AppVocabSetsRoute: typeof AppVocabSetsRoute
   AppVocabularyRoute: typeof AppVocabularyRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppGamesRoute: AppGamesRoute,
+  AppLeaderboardRoute: AppLeaderboardRoute,
+  AppStoreRoute: AppStoreRoute,
   AppVocabSetsRoute: AppVocabSetsRoute,
   AppVocabularyRoute: AppVocabularyRoute,
   AppIndexRoute: AppIndexRoute,
