@@ -16,6 +16,7 @@ import { Route as AppVocabSetsRouteImport } from './routes/_app.vocab-sets'
 import { Route as AppStoreRouteImport } from './routes/_app.store'
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
+import { Route as AppVocabSetsSetIdRouteImport } from './routes/_app.vocab-sets.$setId'
 import { Route as AppGamesFlashcardRouteImport } from './routes/_app.games.flashcard'
 
 const AppRoute = AppRouteImport.update({
@@ -52,6 +53,11 @@ const AppGamesIndexRoute = AppGamesIndexRouteImport.update({
   path: '/games/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppVocabSetsSetIdRoute = AppVocabSetsSetIdRouteImport.update({
+  id: '/$setId',
+  path: '/$setId',
+  getParentRoute: () => AppVocabSetsRoute,
+} as any)
 const AppGamesFlashcardRoute = AppGamesFlashcardRouteImport.update({
   id: '/games/flashcard',
   path: '/games/flashcard',
@@ -62,18 +68,20 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
-  '/vocab-sets': typeof AppVocabSetsRoute
+  '/vocab-sets': typeof AppVocabSetsRouteWithChildren
   '/vocabulary': typeof AppVocabularyRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
+  '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
   '/games/': typeof AppGamesIndexRoute
 }
 export interface FileRoutesByTo {
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
-  '/vocab-sets': typeof AppVocabSetsRoute
+  '/vocab-sets': typeof AppVocabSetsRouteWithChildren
   '/vocabulary': typeof AppVocabularyRoute
   '/': typeof AppIndexRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
+  '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
   '/games': typeof AppGamesIndexRoute
 }
 export interface FileRoutesById {
@@ -81,10 +89,11 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_app/leaderboard': typeof AppLeaderboardRoute
   '/_app/store': typeof AppStoreRoute
-  '/_app/vocab-sets': typeof AppVocabSetsRoute
+  '/_app/vocab-sets': typeof AppVocabSetsRouteWithChildren
   '/_app/vocabulary': typeof AppVocabularyRoute
   '/_app/': typeof AppIndexRoute
   '/_app/games/flashcard': typeof AppGamesFlashcardRoute
+  '/_app/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
   '/_app/games/': typeof AppGamesIndexRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/vocab-sets'
     | '/vocabulary'
     | '/games/flashcard'
+    | '/vocab-sets/$setId'
     | '/games/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/vocabulary'
     | '/'
     | '/games/flashcard'
+    | '/vocab-sets/$setId'
     | '/games'
   id:
     | '__root__'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/_app/vocabulary'
     | '/_app/'
     | '/_app/games/flashcard'
+    | '/_app/vocab-sets/$setId'
     | '/_app/games/'
   fileRoutesById: FileRoutesById
 }
@@ -173,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGamesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/vocab-sets/$setId': {
+      id: '/_app/vocab-sets/$setId'
+      path: '/$setId'
+      fullPath: '/vocab-sets/$setId'
+      preLoaderRoute: typeof AppVocabSetsSetIdRouteImport
+      parentRoute: typeof AppVocabSetsRoute
+    }
     '/_app/games/flashcard': {
       id: '/_app/games/flashcard'
       path: '/games/flashcard'
@@ -183,10 +202,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppVocabSetsRouteChildren {
+  AppVocabSetsSetIdRoute: typeof AppVocabSetsSetIdRoute
+}
+
+const AppVocabSetsRouteChildren: AppVocabSetsRouteChildren = {
+  AppVocabSetsSetIdRoute: AppVocabSetsSetIdRoute,
+}
+
+const AppVocabSetsRouteWithChildren = AppVocabSetsRoute._addFileChildren(
+  AppVocabSetsRouteChildren,
+)
+
 interface AppRouteChildren {
   AppLeaderboardRoute: typeof AppLeaderboardRoute
   AppStoreRoute: typeof AppStoreRoute
-  AppVocabSetsRoute: typeof AppVocabSetsRoute
+  AppVocabSetsRoute: typeof AppVocabSetsRouteWithChildren
   AppVocabularyRoute: typeof AppVocabularyRoute
   AppIndexRoute: typeof AppIndexRoute
   AppGamesFlashcardRoute: typeof AppGamesFlashcardRoute
@@ -196,7 +227,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppLeaderboardRoute: AppLeaderboardRoute,
   AppStoreRoute: AppStoreRoute,
-  AppVocabSetsRoute: AppVocabSetsRoute,
+  AppVocabSetsRoute: AppVocabSetsRouteWithChildren,
   AppVocabularyRoute: AppVocabularyRoute,
   AppIndexRoute: AppIndexRoute,
   AppGamesFlashcardRoute: AppGamesFlashcardRoute,
