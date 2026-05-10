@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Repeat, ArrowRight } from "lucide-react";
 import { gameModes } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/_app/games")({
+export const Route = createFileRoute("/_app/games/")({
   head: () => ({
     meta: [
       { title: "Game phản xạ — VocabLab" },
