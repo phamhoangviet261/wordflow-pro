@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { words as allWords } from "@/lib/mock-data";
 import { useVocabSets, addVocabSet, deleteVocabSet } from "@/lib/sets-store";
 
-export const Route = createFileRoute("/_app/vocab-sets")({
+export const Route = createFileRoute("/_app/vocab-sets/")({
   head: () => ({
     meta: [
       { title: "Bộ từ vựng — VocabLab" },

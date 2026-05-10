@@ -12,9 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppVocabularyRouteImport } from './routes/_app.vocabulary'
-import { Route as AppVocabSetsRouteImport } from './routes/_app.vocab-sets'
 import { Route as AppStoreRouteImport } from './routes/_app.store'
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
+import { Route as AppVocabSetsIndexRouteImport } from './routes/_app.vocab-sets.index'
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
 import { Route as AppVocabSetsSetIdRouteImport } from './routes/_app.vocab-sets.$setId'
 import { Route as AppGamesFlashcardRouteImport } from './routes/_app.games.flashcard'
@@ -33,11 +33,6 @@ const AppVocabularyRoute = AppVocabularyRouteImport.update({
   path: '/vocabulary',
   getParentRoute: () => AppRoute,
 } as any)
-const AppVocabSetsRoute = AppVocabSetsRouteImport.update({
-  id: '/vocab-sets',
-  path: '/vocab-sets',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppStoreRoute = AppStoreRouteImport.update({
   id: '/store',
   path: '/store',
@@ -48,15 +43,20 @@ const AppLeaderboardRoute = AppLeaderboardRouteImport.update({
   path: '/leaderboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppVocabSetsIndexRoute = AppVocabSetsIndexRouteImport.update({
+  id: '/vocab-sets/',
+  path: '/vocab-sets/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppGamesIndexRoute = AppGamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppVocabSetsSetIdRoute = AppVocabSetsSetIdRouteImport.update({
-  id: '/$setId',
-  path: '/$setId',
-  getParentRoute: () => AppVocabSetsRoute,
+  id: '/vocab-sets/$setId',
+  path: '/vocab-sets/$setId',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppGamesFlashcardRoute = AppGamesFlashcardRouteImport.update({
   id: '/games/flashcard',
@@ -68,33 +68,33 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
-  '/vocab-sets': typeof AppVocabSetsRouteWithChildren
   '/vocabulary': typeof AppVocabularyRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
   '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
   '/games/': typeof AppGamesIndexRoute
+  '/vocab-sets/': typeof AppVocabSetsIndexRoute
 }
 export interface FileRoutesByTo {
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
-  '/vocab-sets': typeof AppVocabSetsRouteWithChildren
   '/vocabulary': typeof AppVocabularyRoute
   '/': typeof AppIndexRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
   '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
   '/games': typeof AppGamesIndexRoute
+  '/vocab-sets': typeof AppVocabSetsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_app/leaderboard': typeof AppLeaderboardRoute
   '/_app/store': typeof AppStoreRoute
-  '/_app/vocab-sets': typeof AppVocabSetsRouteWithChildren
   '/_app/vocabulary': typeof AppVocabularyRoute
   '/_app/': typeof AppIndexRoute
   '/_app/games/flashcard': typeof AppGamesFlashcardRoute
   '/_app/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
   '/_app/games/': typeof AppGamesIndexRoute
+  '/_app/vocab-sets/': typeof AppVocabSetsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -102,32 +102,32 @@ export interface FileRouteTypes {
     | '/'
     | '/leaderboard'
     | '/store'
-    | '/vocab-sets'
     | '/vocabulary'
     | '/games/flashcard'
     | '/vocab-sets/$setId'
     | '/games/'
+    | '/vocab-sets/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/leaderboard'
     | '/store'
-    | '/vocab-sets'
     | '/vocabulary'
     | '/'
     | '/games/flashcard'
     | '/vocab-sets/$setId'
     | '/games'
+    | '/vocab-sets'
   id:
     | '__root__'
     | '/_app'
     | '/_app/leaderboard'
     | '/_app/store'
-    | '/_app/vocab-sets'
     | '/_app/vocabulary'
     | '/_app/'
     | '/_app/games/flashcard'
     | '/_app/vocab-sets/$setId'
     | '/_app/games/'
+    | '/_app/vocab-sets/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -157,13 +157,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVocabularyRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/vocab-sets': {
-      id: '/_app/vocab-sets'
-      path: '/vocab-sets'
-      fullPath: '/vocab-sets'
-      preLoaderRoute: typeof AppVocabSetsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/store': {
       id: '/_app/store'
       path: '/store'
@@ -178,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLeaderboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/vocab-sets/': {
+      id: '/_app/vocab-sets/'
+      path: '/vocab-sets'
+      fullPath: '/vocab-sets/'
+      preLoaderRoute: typeof AppVocabSetsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/games/': {
       id: '/_app/games/'
       path: '/games'
@@ -187,10 +187,10 @@ declare module '@tanstack/react-router' {
     }
     '/_app/vocab-sets/$setId': {
       id: '/_app/vocab-sets/$setId'
-      path: '/$setId'
+      path: '/vocab-sets/$setId'
       fullPath: '/vocab-sets/$setId'
       preLoaderRoute: typeof AppVocabSetsSetIdRouteImport
-      parentRoute: typeof AppVocabSetsRoute
+      parentRoute: typeof AppRoute
     }
     '/_app/games/flashcard': {
       id: '/_app/games/flashcard'
@@ -202,36 +202,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AppVocabSetsRouteChildren {
-  AppVocabSetsSetIdRoute: typeof AppVocabSetsSetIdRoute
-}
-
-const AppVocabSetsRouteChildren: AppVocabSetsRouteChildren = {
-  AppVocabSetsSetIdRoute: AppVocabSetsSetIdRoute,
-}
-
-const AppVocabSetsRouteWithChildren = AppVocabSetsRoute._addFileChildren(
-  AppVocabSetsRouteChildren,
-)
-
 interface AppRouteChildren {
   AppLeaderboardRoute: typeof AppLeaderboardRoute
   AppStoreRoute: typeof AppStoreRoute
-  AppVocabSetsRoute: typeof AppVocabSetsRouteWithChildren
   AppVocabularyRoute: typeof AppVocabularyRoute
   AppIndexRoute: typeof AppIndexRoute
   AppGamesFlashcardRoute: typeof AppGamesFlashcardRoute
+  AppVocabSetsSetIdRoute: typeof AppVocabSetsSetIdRoute
   AppGamesIndexRoute: typeof AppGamesIndexRoute
+  AppVocabSetsIndexRoute: typeof AppVocabSetsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppLeaderboardRoute: AppLeaderboardRoute,
   AppStoreRoute: AppStoreRoute,
-  AppVocabSetsRoute: AppVocabSetsRouteWithChildren,
   AppVocabularyRoute: AppVocabularyRoute,
   AppIndexRoute: AppIndexRoute,
   AppGamesFlashcardRoute: AppGamesFlashcardRoute,
+  AppVocabSetsSetIdRoute: AppVocabSetsSetIdRoute,
   AppGamesIndexRoute: AppGamesIndexRoute,
+  AppVocabSetsIndexRoute: AppVocabSetsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -242,3 +232,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
