@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppVocabSetsRouteImport } from './routes/_app.vocab-sets'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -21,24 +22,32 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppVocabSetsRoute = AppVocabSetsRouteImport.update({
+  id: '/vocab-sets',
+  path: '/vocab-sets',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/vocab-sets': typeof AppVocabSetsRoute
 }
 export interface FileRoutesByTo {
+  '/vocab-sets': typeof AppVocabSetsRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/_app/vocab-sets': typeof AppVocabSetsRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/vocab-sets'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/_app' | '/_app/'
+  to: '/vocab-sets' | '/'
+  id: '__root__' | '/_app' | '/_app/vocab-sets' | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -61,14 +70,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/vocab-sets': {
+      id: '/_app/vocab-sets'
+      path: '/vocab-sets'
+      fullPath: '/vocab-sets'
+      preLoaderRoute: typeof AppVocabSetsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppVocabSetsRoute: typeof AppVocabSetsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppVocabSetsRoute: AppVocabSetsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
