@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppVocabularyRouteImport } from './routes/_app.vocabulary'
 import { Route as AppVocabSetsRouteImport } from './routes/_app.vocab-sets'
 
 const AppRoute = AppRouteImport.update({
@@ -22,6 +23,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppVocabularyRoute = AppVocabularyRouteImport.update({
+  id: '/vocabulary',
+  path: '/vocabulary',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppVocabSetsRoute = AppVocabSetsRouteImport.update({
   id: '/vocab-sets',
   path: '/vocab-sets',
@@ -31,23 +37,26 @@ const AppVocabSetsRoute = AppVocabSetsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/vocab-sets': typeof AppVocabSetsRoute
+  '/vocabulary': typeof AppVocabularyRoute
 }
 export interface FileRoutesByTo {
   '/vocab-sets': typeof AppVocabSetsRoute
+  '/vocabulary': typeof AppVocabularyRoute
   '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_app/vocab-sets': typeof AppVocabSetsRoute
+  '/_app/vocabulary': typeof AppVocabularyRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/vocab-sets'
+  fullPaths: '/' | '/vocab-sets' | '/vocabulary'
   fileRoutesByTo: FileRoutesByTo
-  to: '/vocab-sets' | '/'
-  id: '__root__' | '/_app' | '/_app/vocab-sets' | '/_app/'
+  to: '/vocab-sets' | '/vocabulary' | '/'
+  id: '__root__' | '/_app' | '/_app/vocab-sets' | '/_app/vocabulary' | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -70,6 +79,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/vocabulary': {
+      id: '/_app/vocabulary'
+      path: '/vocabulary'
+      fullPath: '/vocabulary'
+      preLoaderRoute: typeof AppVocabularyRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/vocab-sets': {
       id: '/_app/vocab-sets'
       path: '/vocab-sets'
@@ -82,11 +98,13 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppVocabSetsRoute: typeof AppVocabSetsRoute
+  AppVocabularyRoute: typeof AppVocabularyRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppVocabSetsRoute: AppVocabSetsRoute,
+  AppVocabularyRoute: AppVocabularyRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
