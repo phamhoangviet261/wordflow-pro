@@ -40,15 +40,23 @@ export const courses: Course[] = [
   { title: "IELTS 7.0+", category: "IELTS", words: 1500, learned: 60, difficulty: 5, color: "bg-teal-500" },
 ];
 
-export type VocabSet = { id: string; title: string; description: string; total: number; learned: number };
+export type VocabSet = {
+  id: string;
+  title: string;
+  description: string;
+  total: number;
+  learned: number;
+  color: string;
+  wordIds: string[];
+};
 
 export const vocabSets: VocabSet[] = [
-  { id: "1", title: "Animals & Nature", description: "Từ vựng về động vật và thiên nhiên thường gặp.", total: 116, learned: 84 },
-  { id: "2", title: "Business English", description: "Từ vựng kinh doanh, họp hành, email công sở.", total: 220, learned: 132 },
-  { id: "3", title: "Travel & Tourism", description: "Đi du lịch, sân bay, khách sạn, đặt phòng.", total: 145, learned: 90 },
-  { id: "4", title: "Food & Cooking", description: "Nấu ăn, nhà hàng, thực đơn quốc tế.", total: 98, learned: 40 },
-  { id: "5", title: "Technology", description: "Công nghệ, lập trình, internet và AI.", total: 180, learned: 25 },
-  { id: "6", title: "Health & Fitness", description: "Sức khỏe, tập luyện, chế độ ăn uống.", total: 132, learned: 0 },
+  { id: "1", title: "Animals & Nature", description: "Từ vựng về động vật và thiên nhiên thường gặp.", total: 116, learned: 84, color: "from-green-400 to-emerald-500", wordIds: ["1","2","3","5"] },
+  { id: "2", title: "Business English", description: "Từ vựng kinh doanh, họp hành, email công sở.", total: 220, learned: 132, color: "from-blue-400 to-indigo-500", wordIds: ["4","6","8"] },
+  { id: "3", title: "Travel & Tourism", description: "Đi du lịch, sân bay, khách sạn, đặt phòng.", total: 145, learned: 90, color: "from-orange-400 to-pink-500", wordIds: ["5","7"] },
+  { id: "4", title: "Food & Cooking", description: "Nấu ăn, nhà hàng, thực đơn quốc tế.", total: 98, learned: 40, color: "from-rose-400 to-red-500", wordIds: ["1","6"] },
+  { id: "5", title: "Technology", description: "Công nghệ, lập trình, internet và AI.", total: 180, learned: 25, color: "from-purple-400 to-violet-500", wordIds: ["2","8"] },
+  { id: "6", title: "Health & Fitness", description: "Sức khỏe, tập luyện, chế độ ăn uống.", total: 132, learned: 0, color: "from-teal-400 to-cyan-500", wordIds: ["3","7"] },
 ];
 
 export type Word = {
