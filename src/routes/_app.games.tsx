@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Repeat, ArrowRight } from "lucide-react";
 import { gameModes } from "@/lib/mock-data";
 
@@ -21,11 +21,11 @@ function GamesPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {gameModes.map((g) => (
-          <button
-            key={g.title}
-            className={`relative group overflow-hidden rounded-2xl p-6 text-left text-white bg-gradient-to-br ${g.gradient} shadow-lg hover:shadow-2xl hover:-translate-y-1 transition min-h-[180px] flex flex-col justify-between`}
-          >
+        {gameModes.map((g) => {
+          const isFlashcard = g.title === "Flashcard";
+          const className = `relative group overflow-hidden rounded-2xl p-6 text-left text-white bg-gradient-to-br ${g.gradient} shadow-lg hover:shadow-2xl hover:-translate-y-1 transition min-h-[180px] flex flex-col justify-between`;
+          const inner = (
+            <>
             {g.hot && (
               <span className="absolute top-3 right-3 bg-white/95 text-rose-600 text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow">
                 HOT
@@ -39,8 +39,18 @@ function GamesPage() {
               <div className="text-sm opacity-90">{g.subtitle}</div>
             </div>
             <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition" />
-          </button>
-        ))}
+            </>
+          );
+          return isFlashcard ? (
+            <Link key={g.title} to="/games/flashcard" className={className}>
+              {inner}
+            </Link>
+          ) : (
+            <button key={g.title} className={className}>
+              {inner}
+            </button>
+          );
+        })}
       </div>
 
       <div className="rounded-3xl p-6 md:p-8 bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 text-white shadow-xl shadow-purple-500/30 flex flex-col md:flex-row md:items-center md:justify-between gap-4 overflow-hidden relative">
