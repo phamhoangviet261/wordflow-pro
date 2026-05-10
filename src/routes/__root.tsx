@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Vocalab App" },
+      { name: "description", content: "WordFlow Pro is an interactive web app for mastering vocabulary through structured learning and engaging games." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Vocalab App" },
+      { property: "og:description", content: "WordFlow Pro is an interactive web app for mastering vocabulary through structured learning and engaging games." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Vocalab App" },
+      { name: "twitter:description", content: "WordFlow Pro is an interactive web app for mastering vocabulary through structured learning and engaging games." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0a59e8dc-b586-4032-93a4-ee1afb3fdda8/id-preview-da46822f--cf076082-e2ec-4967-9a6c-40e1ac0f4c25.lovable.app-1778434387404.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0a59e8dc-b586-4032-93a4-ee1afb3fdda8/id-preview-da46822f--cf076082-e2ec-4967-9a6c-40e1ac0f4c25.lovable.app-1778434387404.png" },
     ],
     links: [
       {
