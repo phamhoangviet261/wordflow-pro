@@ -15,7 +15,7 @@ import { Route as AppVocabularyRouteImport } from './routes/_app.vocabulary'
 import { Route as AppVocabSetsRouteImport } from './routes/_app.vocab-sets'
 import { Route as AppStoreRouteImport } from './routes/_app.store'
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
-import { Route as AppGamesRouteImport } from './routes/_app.games'
+import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
 import { Route as AppGamesFlashcardRouteImport } from './routes/_app.games.flashcard'
 
 const AppRoute = AppRouteImport.update({
@@ -47,75 +47,75 @@ const AppLeaderboardRoute = AppLeaderboardRouteImport.update({
   path: '/leaderboard',
   getParentRoute: () => AppRoute,
 } as any)
-const AppGamesRoute = AppGamesRouteImport.update({
-  id: '/games',
-  path: '/games',
+const AppGamesIndexRoute = AppGamesIndexRouteImport.update({
+  id: '/games/',
+  path: '/games/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppGamesFlashcardRoute = AppGamesFlashcardRouteImport.update({
-  id: '/flashcard',
-  path: '/flashcard',
-  getParentRoute: () => AppGamesRoute,
+  id: '/games/flashcard',
+  path: '/games/flashcard',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/games': typeof AppGamesRouteWithChildren
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
   '/vocab-sets': typeof AppVocabSetsRoute
   '/vocabulary': typeof AppVocabularyRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
+  '/games/': typeof AppGamesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/games': typeof AppGamesRouteWithChildren
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
   '/vocab-sets': typeof AppVocabSetsRoute
   '/vocabulary': typeof AppVocabularyRoute
   '/': typeof AppIndexRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
+  '/games': typeof AppGamesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
-  '/_app/games': typeof AppGamesRouteWithChildren
   '/_app/leaderboard': typeof AppLeaderboardRoute
   '/_app/store': typeof AppStoreRoute
   '/_app/vocab-sets': typeof AppVocabSetsRoute
   '/_app/vocabulary': typeof AppVocabularyRoute
   '/_app/': typeof AppIndexRoute
   '/_app/games/flashcard': typeof AppGamesFlashcardRoute
+  '/_app/games/': typeof AppGamesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/games'
     | '/leaderboard'
     | '/store'
     | '/vocab-sets'
     | '/vocabulary'
     | '/games/flashcard'
+    | '/games/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/games'
     | '/leaderboard'
     | '/store'
     | '/vocab-sets'
     | '/vocabulary'
     | '/'
     | '/games/flashcard'
+    | '/games'
   id:
     | '__root__'
     | '/_app'
-    | '/_app/games'
     | '/_app/leaderboard'
     | '/_app/store'
     | '/_app/vocab-sets'
     | '/_app/vocabulary'
     | '/_app/'
     | '/_app/games/flashcard'
+    | '/_app/games/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -166,51 +166,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLeaderboardRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/games': {
-      id: '/_app/games'
+    '/_app/games/': {
+      id: '/_app/games/'
       path: '/games'
-      fullPath: '/games'
-      preLoaderRoute: typeof AppGamesRouteImport
+      fullPath: '/games/'
+      preLoaderRoute: typeof AppGamesIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/games/flashcard': {
       id: '/_app/games/flashcard'
-      path: '/flashcard'
+      path: '/games/flashcard'
       fullPath: '/games/flashcard'
       preLoaderRoute: typeof AppGamesFlashcardRouteImport
-      parentRoute: typeof AppGamesRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
 
-interface AppGamesRouteChildren {
-  AppGamesFlashcardRoute: typeof AppGamesFlashcardRoute
-}
-
-const AppGamesRouteChildren: AppGamesRouteChildren = {
-  AppGamesFlashcardRoute: AppGamesFlashcardRoute,
-}
-
-const AppGamesRouteWithChildren = AppGamesRoute._addFileChildren(
-  AppGamesRouteChildren,
-)
-
 interface AppRouteChildren {
-  AppGamesRoute: typeof AppGamesRouteWithChildren
   AppLeaderboardRoute: typeof AppLeaderboardRoute
   AppStoreRoute: typeof AppStoreRoute
   AppVocabSetsRoute: typeof AppVocabSetsRoute
   AppVocabularyRoute: typeof AppVocabularyRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppGamesFlashcardRoute: typeof AppGamesFlashcardRoute
+  AppGamesIndexRoute: typeof AppGamesIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppGamesRoute: AppGamesRouteWithChildren,
   AppLeaderboardRoute: AppLeaderboardRoute,
   AppStoreRoute: AppStoreRoute,
   AppVocabSetsRoute: AppVocabSetsRoute,
   AppVocabularyRoute: AppVocabularyRoute,
   AppIndexRoute: AppIndexRoute,
+  AppGamesFlashcardRoute: AppGamesFlashcardRoute,
+  AppGamesIndexRoute: AppGamesIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -221,3 +211,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
