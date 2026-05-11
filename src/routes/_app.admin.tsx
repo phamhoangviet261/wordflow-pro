@@ -1541,3 +1541,63 @@ function ActionButton({ children, onClick, title, tone }: { children: React.Reac
     </button>
   );
 }
+
+function FilterSelect({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: [string, string][] }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)}
+      className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+      {options.map(([v, label]) => (<option key={v} value={v}>{label}</option>))}
+    </select>
+  );
+}
+
+function StatusBadge({ status }: { status: "draft" | "published" }) {
+  if (status === "published")
+    return <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md bg-green-100 text-green-700"><CheckCircle2 className="size-3" /> PUBLISHED</span>;
+  return <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md bg-amber-100 text-amber-700"><Pencil className="size-3" /> DRAFT</span>;
+}
+
+function DifficultyDots({ level }: { level: number }) {
+  if (!level) return <span className="text-xs text-slate-400">—</span>;
+  return (
+    <div className="flex gap-0.5">
+      {[1,2,3,4,5].map((n) => (
+        <span key={n} className={`size-2 rounded-full ${n <= level ? "bg-indigo-500" : "bg-slate-200"}`} />
+      ))}
+    </div>
+  );
+}
+
+function VersionHistoryModal({ title, versions, onRestore, onClose }: {
+  title: string;
+  versions: { at: string; summary: string; badge: "draft" | "published" }[];
+  onRestore: (index: number) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal title={title} onClose={onClose}>
+      {versions.length === 0 ? (
+        <div className="text-sm text-slate-500 text-center py-8">Chưa có phiên bản nào được lưu. Mỗi lần chỉnh sửa sẽ tạo một snapshot mới.</div>
+      ) : (
+        <ul className="divide-y divide-slate-100 -mx-2">
+          {versions.map((v, i) => (
+            <li key={i} className="flex items-center gap-3 px-2 py-3">
+              <div className="size-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center"><Clock className="size-4" /></div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-slate-800 truncate">{v.summary}</div>
+                <div className="text-[11px] text-slate-500">{new Date(v.at).toLocaleString("vi-VN")}</div>
+              </div>
+              <StatusBadge status={v.badge} />
+              <button onClick={() => onRestore(i)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                <RotateCcw className="size-3.5" /> Khôi phục
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60 -mx-6 -mb-5 mt-5">
+        <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">Đóng</button>
+      </div>
+    </Modal>
+  );
+}
