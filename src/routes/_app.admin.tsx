@@ -16,6 +16,7 @@ import {
   type AdminUser, type AdminSubscription, type AdminRole,
   type PaymentRecord, type Coupon, type WebhookLog,
   type AuditLog, type RateLimitRule, type AdminSession, type TrustedDevice, type IpBlockEntry,
+  type CaptchaConfig,
 } from "@/lib/admin-mock";
 import type { Word, VocabSet } from "@/lib/mock-data";
 import {
