@@ -2,6 +2,8 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Toaster } from "@/components/ui/sonner";
+import { FloatingFeedback } from "@/components/gamification/FloatingFeedback";
+import { LevelUpModal } from "@/components/gamification/LevelUpModal";
 
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
@@ -18,6 +20,8 @@ function AppLayout() {
         </main>
       </div>
       <Toaster richColors position="top-right" />
+      <FloatingFeedback />
+      <LevelUpModal />
     </div>
   );
 }

@@ -1,12 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, BookMarked, BookOpen, Gamepad2, Store, Trophy, GraduationCap, Shield } from "lucide-react";
+import { Home, BookMarked, BookOpen, Gamepad2, Gift, Trophy, GraduationCap, Shield } from "lucide-react";
 
 const items = [
   { to: "/", label: "Trang chủ", icon: Home },
   { to: "/vocab-sets", label: "Bộ từ vựng", icon: BookMarked },
   { to: "/vocabulary", label: "Từ vựng", icon: BookOpen },
   { to: "/games", label: "Game phản xạ", icon: Gamepad2 },
-  { to: "/store", label: "Cửa hàng", icon: Store },
+  { to: "/store", label: "Phần thưởng", icon: Gift },
   { to: "/leaderboard", label: "Xếp hạng", icon: Trophy },
   { to: "/admin", label: "Quản trị", icon: Shield },
 ] as const;
