@@ -5,13 +5,17 @@ import {
   CheckCircle2, Crown, Plus, Pencil, X, Eye, LogIn, Mail, Download, ShieldCheck,
   Activity, Monitor, Clock, AlertTriangle, Receipt, Tag, RotateCcw, TrendingUp, Webhook,
   RefreshCw, Copy, History, Upload, Sparkles, Undo2, Send, AlertCircle,
+  Lock, KeyRound, Smartphone, Globe, Power,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   mockUsers, mockSubscriptions, mockLoginHistory, mockActivityLog,
   mockPayments, mockCoupons, mockWebhooks, mockRevenue,
+  mockAdminTwoFactor, mockAuditLogs, mockRateLimits, mockCaptcha,
+  mockSessions, mockDevices, mockIpBlocklist,
   type AdminUser, type AdminSubscription, type AdminRole,
   type PaymentRecord, type Coupon, type WebhookLog,
+  type AuditLog, type RateLimitRule, type AdminSession, type TrustedDevice, type IpBlockEntry,
 } from "@/lib/admin-mock";
 import type { Word, VocabSet } from "@/lib/mock-data";
 import {
@@ -35,13 +39,14 @@ export const Route = createFileRoute("/_app/admin")({
   component: AdminPage,
 });
 
-type Tab = "users" | "subs" | "words" | "sets";
+type Tab = "users" | "subs" | "words" | "sets" | "security";
 
 const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
   { id: "users", label: "Người dùng", icon: Users },
   { id: "subs", label: "Gói đăng ký", icon: CreditCard },
   { id: "words", label: "Từ vựng", icon: BookOpen },
   { id: "sets", label: "Bộ từ vựng", icon: BookMarked },
+  { id: "security", label: "Bảo mật", icon: ShieldCheck },
 ];
 
 function AdminPage() {
@@ -83,6 +88,7 @@ function AdminPage() {
       {tab === "subs" && <SubsPanel />}
       {tab === "words" && <WordsPanel />}
       {tab === "sets" && <SetsPanel />}
+      {tab === "security" && <SecurityPanel />}
     </div>
   );
 }
