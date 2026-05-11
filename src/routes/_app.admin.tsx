@@ -879,46 +879,100 @@ const wordTypes: Word["type"][] = ["NOUN", "VERB", "ADJ", "ADV"];
 function WordsPanel() {
   const items = useWords();
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
+  const [diffFilter, setDiffFilter] = useState<"all" | 1 | 2 | 3 | 4 | 5>("all");
+  const [tagFilter, setTagFilter] = useState<string>("all");
   const [editing, setEditing] = useState<Word | null>(null);
   const [creating, setCreating] = useState(false);
+  const [historyOf, setHistoryOf] = useState<Word | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
-  const filtered = useMemo(
-    () => items.filter((w) => w.word.toLowerCase().includes(q.toLowerCase()) || w.meaning.toLowerCase().includes(q.toLowerCase())),
-    [items, q],
-  );
+  const tags = getAllTags();
+
+  const filtered = useMemo(() => items.filter((w) => {
+    if (q && !(w.word.toLowerCase().includes(q.toLowerCase()) || w.meaning.toLowerCase().includes(q.toLowerCase()))) return false;
+    if (statusFilter !== "all" && (w.status ?? "published") !== statusFilter) return false;
+    if (diffFilter !== "all" && (w.difficulty ?? 0) !== diffFilter) return false;
+    if (tagFilter !== "all" && !(w.tags ?? []).includes(tagFilter)) return false;
+    return true;
+  }), [items, q, statusFilter, diffFilter, tagFilter]);
+
   const remove = (id: string) => { deleteWord(id); toast.success("Đã xoá từ."); };
+  const togglePublish = (w: Word) => {
+    const next = (w.status ?? "published") === "published" ? "draft" : "published";
+    updateWord(w.id, { status: next });
+    toast.success(next === "published" ? "Đã xuất bản từ." : "Đã chuyển về Draft.");
+  };
+  const handleUndo = () => {
+    if (undoWords()) toast.success("Đã hoàn tác."); else toast.error("Không có gì để hoàn tác.");
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <SearchBar value={q} onChange={setQ} placeholder="Tìm từ hoặc nghĩa..." />
-        <button onClick={() => setCreating(true)} className="ml-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-700 transition">
-          <Plus className="size-4" /> Thêm từ
-        </button>
+        <FilterSelect value={statusFilter} onChange={(v) => setStatusFilter(v as any)}
+          options={[["all","Tất cả trạng thái"],["published","Published"],["draft","Draft"]]} />
+        <FilterSelect value={String(diffFilter)} onChange={(v) => setDiffFilter(v === "all" ? "all" : (Number(v) as 1|2|3|4|5))}
+          options={[["all","Mọi độ khó"],["1","★ 1"],["2","★ 2"],["3","★ 3"],["4","★ 4"],["5","★ 5"]]} />
+        <FilterSelect value={tagFilter} onChange={setTagFilter}
+          options={[["all","Mọi tag"], ...tags.map((t) => [t, `#${t}`] as [string, string])]} />
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
+          <button onClick={handleUndo} disabled={!canUndoWords()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition">
+            <Undo2 className="size-3.5" /> Hoàn tác
+          </button>
+          <button onClick={() => setImporting(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">
+            <Upload className="size-3.5" /> Import CSV
+          </button>
+          <button onClick={() => setAiOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 transition">
+            <Sparkles className="size-3.5" /> AI generate
+          </button>
+          <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-700 transition">
+            <Plus className="size-4" /> Thêm từ
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
-            <tr><Th>Từ</Th><Th>Phiên âm</Th><Th>Nghĩa</Th><Th>Loại</Th><Th>Trạng thái</Th><Th className="text-right">Hành động</Th></tr>
+            <tr>
+              <Th>Từ</Th><Th>Nghĩa</Th><Th>Loại</Th><Th>Trạng thái</Th>
+              <Th>Độ khó</Th><Th>Tags</Th><Th className="text-right">Hành động</Th>
+            </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filtered.map((w) => (
               <tr key={w.id} className="hover:bg-slate-50/60">
-                <Td className="font-bold text-slate-800">{w.word}</Td>
-                <Td className="text-xs text-slate-500">{w.phonetic}</Td>
+                <Td>
+                  <div className="font-bold text-slate-800">{w.word}</div>
+                  <div className="text-[11px] text-slate-400">{w.phonetic}</div>
+                </Td>
                 <Td className="text-slate-600">{w.meaning}</Td>
                 <Td><span className="text-[10px] font-bold px-2 py-1 rounded-md bg-blue-100 text-blue-600">{w.type}</span></Td>
-                <Td>{w.learned ? <span className="text-xs font-semibold text-green-600">Đã học</span> : <span className="text-xs font-semibold text-slate-400">Chưa học</span>}</Td>
+                <Td><StatusBadge status={w.status ?? "published"} /></Td>
+                <Td><DifficultyDots level={w.difficulty ?? 0} /></Td>
+                <Td>
+                  <div className="flex flex-wrap gap-1">
+                    {(w.tags ?? []).map((t) => (
+                      <span key={t} className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">#{t}</span>
+                    ))}
+                  </div>
+                </Td>
                 <Td className="text-right">
                   <div className="inline-flex gap-1.5">
+                    <ActionButton onClick={() => togglePublish(w)} title={(w.status ?? "published") === "published" ? "Chuyển Draft" : "Publish"} tone={(w.status ?? "published") === "published" ? "amber" : "green"}>
+                      <Send className="size-3.5" />
+                    </ActionButton>
+                    <ActionButton onClick={() => setHistoryOf(w)} title="Lịch sử" tone="slate"><History className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => setEditing(w)} title="Sửa" tone="slate"><Pencil className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => remove(w.id)} title="Xoá" tone="red"><Trash2 className="size-3.5" /></ActionButton>
                   </div>
                 </Td>
               </tr>
             ))}
-            {filtered.length === 0 && (<tr><td colSpan={6} className="p-8 text-center text-sm text-slate-500">Không có từ phù hợp.</td></tr>)}
+            {filtered.length === 0 && (<tr><td colSpan={7} className="p-8 text-center text-sm text-slate-500">Không có từ phù hợp.</td></tr>)}
           </tbody>
         </table>
       </div>
@@ -934,6 +988,22 @@ function WordsPanel() {
           }}
         />
       )}
+
+      {historyOf && (
+        <VersionHistoryModal
+          title={`Lịch sử: ${historyOf.word}`}
+          versions={getWordHistory(historyOf.id).map((h) => ({
+            at: h.at,
+            summary: `${h.snapshot.word} — ${h.snapshot.meaning}`,
+            badge: h.snapshot.status ?? "published",
+          }))}
+          onRestore={(i) => { restoreWordVersion(historyOf.id, i); toast.success("Đã khôi phục phiên bản."); setHistoryOf(null); }}
+          onClose={() => setHistoryOf(null)}
+        />
+      )}
+
+      {importing && <ImportCsvModal onClose={() => setImporting(false)} />}
+      {aiOpen && <AiGenerateModal onClose={() => setAiOpen(false)} />}
     </div>
   );
 }
@@ -945,16 +1015,30 @@ function WordEditor({ initial, onSave, onClose }: { initial: Word | null; onSave
   const [type, setType] = useState<Word["type"]>(initial?.type ?? "NOUN");
   const [example, setExample] = useState(initial?.example ?? "");
   const [learned, setLearned] = useState(initial?.learned ?? false);
+  const [status, setStatus] = useState<"draft" | "published">(initial?.status ?? "draft");
+  const [difficulty, setDifficulty] = useState<1 | 2 | 3 | 4 | 5>((initial?.difficulty ?? 3) as 1|2|3|4|5);
+  const [tagsInput, setTagsInput] = useState((initial?.tags ?? []).join(", "));
+
+  const dup = findDuplicateWord(word, initial?.id);
 
   const submit = () => {
     if (!word.trim() || !meaning.trim()) { toast.error("Vui lòng nhập từ và nghĩa."); return; }
-    onSave({ word: word.trim(), phonetic: phonetic.trim(), meaning: meaning.trim(), type, example: example.trim(), learned });
+    if (dup) { toast.error(`Từ "${dup.word}" đã tồn tại.`); return; }
+    const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
+    onSave({ word: word.trim(), phonetic: phonetic.trim(), meaning: meaning.trim(), type, example: example.trim(), learned, status, difficulty, tags });
   };
 
   return (
     <Modal title={initial ? "Chỉnh sửa từ" : "Thêm từ mới"} onClose={onClose}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="Từ"><Input value={word} onChange={setWord} placeholder="abandon" /></Field>
+        <Field label="Từ">
+          <Input value={word} onChange={setWord} placeholder="abandon" />
+          {dup && (
+            <div className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 inline-flex items-center gap-1.5">
+              <AlertCircle className="size-3.5" /> Trùng với từ "{dup.word}" đã có.
+            </div>
+          )}
+        </Field>
         <Field label="Phiên âm"><Input value={phonetic} onChange={setPhonetic} placeholder="/əˈbændən/" /></Field>
         <Field label="Nghĩa" className="md:col-span-2"><Input value={meaning} onChange={setMeaning} placeholder="từ bỏ, bỏ rơi" /></Field>
         <Field label="Loại từ">
@@ -966,10 +1050,29 @@ function WordEditor({ initial, onSave, onClose }: { initial: Word | null; onSave
           </div>
         </Field>
         <Field label="Trạng thái">
+          <div className="flex gap-1.5">
+            {(["draft","published"] as const).map((s) => (
+              <button key={s} type="button" onClick={() => setStatus(s)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition ${status === s ? (s === "published" ? "bg-green-600 text-white" : "bg-amber-500 text-white") : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{s}</button>
+            ))}
+          </div>
+        </Field>
+        <Field label="Độ khó">
+          <div className="flex gap-1.5">
+            {[1,2,3,4,5].map((n) => (
+              <button key={n} type="button" onClick={() => setDifficulty(n as 1|2|3|4|5)}
+                className={`size-8 rounded-lg text-xs font-bold transition ${difficulty === n ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{n}</button>
+            ))}
+          </div>
+        </Field>
+        <Field label="Đã học">
           <label className="inline-flex items-center gap-2 text-sm text-slate-700">
             <input type="checkbox" checked={learned} onChange={(e) => setLearned(e.target.checked)} className="size-4 rounded border-slate-300 text-indigo-600" />
-            Đã học
+            Đánh dấu đã học
           </label>
+        </Field>
+        <Field label="Tags (phân tách bằng dấu phẩy)" className="md:col-span-2">
+          <Input value={tagsInput} onChange={setTagsInput} placeholder="common, academic, ielts" />
         </Field>
         <Field label="Ví dụ" className="md:col-span-2">
           <textarea value={example} onChange={(e) => setExample(e.target.value)} rows={2} placeholder="He abandoned his car in the snow."
@@ -980,6 +1083,151 @@ function WordEditor({ initial, onSave, onClose }: { initial: Word | null; onSave
     </Modal>
   );
 }
+
+function ImportCsvModal({ onClose }: { onClose: () => void }) {
+  const [text, setText] = useState("word,phonetic,meaning,type,example\nresilient,/rɪˈzɪliənt/,kiên cường,ADJ,She is a resilient leader.");
+
+  const onFile = async (file: File) => {
+    const t = await file.text();
+    setText(t);
+  };
+
+  const submit = () => {
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) { toast.error("Không có dữ liệu."); return; }
+    const header = lines[0].toLowerCase().includes("word") ? lines.shift()!.split(",").map((s) => s.trim().toLowerCase()) : ["word","phonetic","meaning","type","example"];
+    const idx = (k: string) => header.indexOf(k);
+    const items: Array<Omit<Word, "id" | "learned">> = [];
+    for (const line of lines) {
+      const cols = parseCsvLine(line);
+      const w = cols[idx("word")] ?? "";
+      const meaning = cols[idx("meaning")] ?? "";
+      if (!w || !meaning) continue;
+      const typeRaw = (cols[idx("type")] ?? "NOUN").toUpperCase();
+      const type = (["NOUN","VERB","ADJ","ADV"].includes(typeRaw) ? typeRaw : "NOUN") as Word["type"];
+      items.push({
+        word: w,
+        phonetic: cols[idx("phonetic")] ?? "",
+        meaning,
+        type,
+        example: cols[idx("example")] ?? "",
+        status: "draft",
+      });
+    }
+    if (items.length === 0) { toast.error("Không phân tích được dòng nào."); return; }
+    const { added, skipped } = bulkAddWords(items);
+    toast.success(`Đã import ${added} từ${skipped ? `, bỏ qua ${skipped} từ trùng` : ""}.`);
+    onClose();
+  };
+
+  return (
+    <Modal title="Import từ CSV/Excel" onClose={onClose} wide>
+      <div className="space-y-3">
+        <p className="text-xs text-slate-500">Định dạng: <code className="bg-slate-100 px-1.5 py-0.5 rounded">word,phonetic,meaning,type,example</code>. Hỗ trợ paste từ Excel (CSV).</p>
+        <input type="file" accept=".csv,text/csv,.txt" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+          className="text-xs text-slate-600 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 file:font-semibold hover:file:bg-slate-200" />
+        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={10}
+          className="w-full font-mono text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+        <div className="text-xs text-slate-500 inline-flex items-center gap-1.5"><AlertCircle className="size-3.5" /> Các từ trùng (theo "word") sẽ bị bỏ qua.</div>
+      </div>
+      <ModalActions onClose={onClose} onSave={submit} saveLabel="Import" />
+    </Modal>
+  );
+}
+
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = "", inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQ) {
+      if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else cur += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ",") { out.push(cur); cur = ""; }
+      else cur += c;
+    }
+  }
+  out.push(cur);
+  return out.map((s) => s.trim());
+}
+
+function AiGenerateModal({ onClose }: { onClose: () => void }) {
+  const [topic, setTopic] = useState("Travel");
+  const [count, setCount] = useState(5);
+  const [difficulty, setDifficulty] = useState<1 | 2 | 3 | 4 | 5>(3);
+  const [loading, setLoading] = useState(false);
+
+  const generate = async () => {
+    if (!topic.trim()) { toast.error("Nhập chủ đề."); return; }
+    setLoading(true);
+    // Mock generation — produce sample words tagged with topic.
+    await new Promise((r) => setTimeout(r, 700));
+    const samples = SAMPLE_BANK.slice(0, Math.max(1, Math.min(20, count))).map((s, i) => ({
+      ...s,
+      status: "draft" as const,
+      difficulty,
+      tags: [topic.trim().toLowerCase(), "ai-generated"],
+      example: `${s.example} (chủ đề: ${topic.trim()}) [#${i+1}]`,
+    }));
+    const { added, skipped } = bulkAddWords(samples);
+    toast.success(`AI đã tạo ${added} từ${skipped ? `, ${skipped} từ trùng đã bỏ qua` : ""}.`);
+    setLoading(false);
+    onClose();
+  };
+
+  return (
+    <Modal title="AI Generate Vocabulary" onClose={onClose}>
+      <div className="space-y-4">
+        <Field label="Chủ đề"><Input value={topic} onChange={setTopic} placeholder="Travel, Business, Technology..." /></Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Số từ">
+            <input type="number" min={1} max={20} value={count} onChange={(e) => setCount(Number(e.target.value))}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+          </Field>
+          <Field label="Độ khó">
+            <div className="flex gap-1.5">
+              {[1,2,3,4,5].map((n) => (
+                <button key={n} type="button" onClick={() => setDifficulty(n as 1|2|3|4|5)}
+                  className={`size-8 rounded-lg text-xs font-bold transition ${difficulty === n ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{n}</button>
+              ))}
+            </div>
+          </Field>
+        </div>
+        <div className="text-xs text-slate-500 bg-purple-50 border border-purple-100 rounded-lg p-3 inline-flex items-start gap-2">
+          <Sparkles className="size-4 text-purple-600 shrink-0 mt-0.5" />
+          <span>Từ được tạo ở trạng thái <b>Draft</b>. Bạn có thể duyệt và publish sau.</span>
+        </div>
+      </div>
+      <ModalActions onClose={onClose} onSave={generate} saveLabel={loading ? "Đang tạo..." : "Tạo từ"} />
+    </Modal>
+  );
+}
+
+const SAMPLE_BANK: Array<Omit<Word, "id" | "learned" | "status" | "difficulty" | "tags">> = [
+  { word: "itinerary", phonetic: "/aɪˈtɪnərəri/", meaning: "lịch trình", type: "NOUN", example: "Plan a flexible itinerary." },
+  { word: "embark", phonetic: "/ɪmˈbɑːk/", meaning: "khởi hành, bắt đầu", type: "VERB", example: "We embarked on a new journey." },
+  { word: "scenic", phonetic: "/ˈsiːnɪk/", meaning: "có cảnh đẹp", type: "ADJ", example: "A scenic mountain road." },
+  { word: "negotiate", phonetic: "/nɪˈɡəʊʃieɪt/", meaning: "đàm phán", type: "VERB", example: "They negotiated a deal." },
+  { word: "leverage", phonetic: "/ˈliːvərɪdʒ/", meaning: "tận dụng", type: "VERB", example: "Leverage your strengths." },
+  { word: "innovative", phonetic: "/ˈɪnəveɪtɪv/", meaning: "đổi mới", type: "ADJ", example: "An innovative product." },
+  { word: "deploy", phonetic: "/dɪˈplɔɪ/", meaning: "triển khai", type: "VERB", example: "Deploy the new feature." },
+  { word: "robust", phonetic: "/rəʊˈbʌst/", meaning: "vững chắc", type: "ADJ", example: "A robust system." },
+  { word: "framework", phonetic: "/ˈfreɪmwɜːk/", meaning: "khung, nền tảng", type: "NOUN", example: "Use a modern framework." },
+  { word: "concise", phonetic: "/kənˈsaɪs/", meaning: "ngắn gọn", type: "ADJ", example: "Keep it concise." },
+  { word: "diligent", phonetic: "/ˈdɪlɪdʒənt/", meaning: "siêng năng", type: "ADJ", example: "A diligent student." },
+  { word: "endeavor", phonetic: "/ɪnˈdevə/", meaning: "nỗ lực", type: "NOUN", example: "A noble endeavor." },
+  { word: "facilitate", phonetic: "/fəˈsɪlɪteɪt/", meaning: "tạo điều kiện", type: "VERB", example: "Facilitate the meeting." },
+  { word: "intricate", phonetic: "/ˈɪntrɪkət/", meaning: "phức tạp", type: "ADJ", example: "An intricate design." },
+  { word: "luminous", phonetic: "/ˈluːmɪnəs/", meaning: "rực sáng", type: "ADJ", example: "Luminous stars." },
+  { word: "meticulous", phonetic: "/məˈtɪkjʊləs/", meaning: "tỉ mỉ", type: "ADJ", example: "Meticulous notes." },
+  { word: "navigate", phonetic: "/ˈnævɪɡeɪt/", meaning: "điều hướng", type: "VERB", example: "Navigate the city." },
+  { word: "optimize", phonetic: "/ˈɒptɪmaɪz/", meaning: "tối ưu", type: "VERB", example: "Optimize the query." },
+  { word: "pivotal", phonetic: "/ˈpɪvətl/", meaning: "then chốt", type: "ADJ", example: "A pivotal moment." },
+  { word: "quintessential", phonetic: "/ˌkwɪntɪˈsenʃl/", meaning: "tinh túy nhất", type: "ADJ", example: "The quintessential example." },
+];
 
 /* ============ SETS ============ */
 
