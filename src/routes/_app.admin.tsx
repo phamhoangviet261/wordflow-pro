@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, createContext, useContext, useCallback } from "react";
 import {
   Shield, Users, CreditCard, BookOpen, BookMarked, Search, Trash2, Ban,
   CheckCircle2, Crown, Plus, Pencil, X, Eye, LogIn, Mail, Download, ShieldCheck,
   Activity, Monitor, Clock, AlertTriangle, Receipt, Tag, RotateCcw, TrendingUp, Webhook,
   RefreshCw, Copy, History, Upload, Sparkles, Undo2, Send, AlertCircle,
   Lock, KeyRound, Smartphone, Globe, Power,
+  ArrowUp, ArrowDown, ArrowUpDown, AlertOctagon, Flame, BookOpen as BookOpenIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
