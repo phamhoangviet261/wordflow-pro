@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { Home, BookMarked, BookOpen, Gamepad2, Gift, Trophy, GraduationCap, Shield, LogOut, Settings, User as UserIcon, Mail, Flame, Sparkles, Coins, ChevronUp } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useGamification } from "@/lib/gamification-store";
 import { toast } from "sonner";
 
@@ -17,12 +17,33 @@ const items = [
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const g = useGamification();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const user = {
     name: "Nguyễn Minh Anh",
     email: "minhanh@vocablab.io",
     plan: "Pro",
     initials: "MA",
   };
+
+  useEffect(() => {
+    const closeMenu = (event: MouseEvent) => {
+      if (!userMenuRef.current?.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setUserMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeMenu);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeMenu);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
   return (
     <aside className="hidden md:flex flex-col w-64 shrink-0 bg-white border-r border-slate-200 h-screen sticky top-0">
       <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-100">
@@ -49,21 +70,9 @@ export function AppSidebar() {
         })}
       </nav>
 
-      <div className="p-3 border-t border-slate-100">
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="w-full flex items-center gap-3 px-2 py-2 rounded-2xl hover:bg-slate-50 transition group">
-              <div className="size-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold flex items-center justify-center shadow shrink-0">
-                {user.initials}
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <div className="text-sm font-semibold text-slate-800 truncate">{user.name}</div>
-                <div className="text-xs text-slate-500 truncate">Cấp {g.level} · {user.plan}</div>
-              </div>
-              <ChevronUp className="size-4 text-slate-400 group-hover:text-slate-600 shrink-0" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent side="top" align="start" sideOffset={8} className="w-72 p-0 overflow-hidden rounded-2xl shadow-xl border-slate-200">
+      <div ref={userMenuRef} className="relative p-3 border-t border-slate-100">
+        {userMenuOpen && (
+          <div className="absolute left-3 bottom-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2">
             <div className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white p-4">
               <div className="flex items-center gap-3">
                 <div className="size-12 rounded-full bg-white/20 backdrop-blur text-white font-bold text-lg flex items-center justify-center">
@@ -98,8 +107,24 @@ export function AppSidebar() {
                 onClick={() => toast.success("Đã đăng xuất (mô phỏng)")}
               />
             </div>
-          </PopoverContent>
-        </Popover>
+          </div>
+        )}
+
+            <button
+              type="button"
+              aria-expanded={userMenuOpen}
+              onClick={() => setUserMenuOpen((open) => !open)}
+              className="w-full flex items-center gap-3 px-2 py-2 rounded-2xl hover:bg-slate-50 transition group"
+            >
+              <div className="size-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold flex items-center justify-center shadow shrink-0">
+                {user.initials}
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <div className="text-sm font-semibold text-slate-800 truncate">{user.name}</div>
+                <div className="text-xs text-slate-500 truncate">Cấp {g.level} · {user.plan}</div>
+              </div>
+              <ChevronUp className={`size-4 text-slate-400 group-hover:text-slate-600 shrink-0 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+            </button>
       </div>
     </aside>
   );
