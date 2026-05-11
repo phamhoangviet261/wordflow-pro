@@ -138,37 +138,89 @@ function UsersPanel() {
   const [items, setItems] = useState<AdminUser[]>(mockUsers);
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState<AdminRole | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended">("all");
+  const [planFilter, setPlanFilter] = useState<"all" | "Free" | "Pro" | "Pro+">("all");
+  const [sortKey, setSortKey] = useState<"name" | "role" | "plan" | "status" | "lastActiveAt" | "lessonsCompleted">("lastActiveAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detail, setDetail] = useState<AdminUser | null>(null);
   const [notifyTarget, setNotifyTarget] = useState<AdminUser[] | null>(null);
+  const confirm = useConfirm();
+
+  const onSort = (k: typeof sortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+  };
 
   const filtered = useMemo(
     () => items.filter((u) => {
       const matchQ = u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase());
       const matchRole = roleFilter === "all" || u.role === roleFilter;
-      return matchQ && matchRole;
+      const matchStatus = statusFilter === "all" || u.status === statusFilter;
+      const matchPlan = planFilter === "all" || u.plan === planFilter;
+      return matchQ && matchRole && matchStatus && matchPlan;
     }),
-    [items, q, roleFilter],
+    [items, q, roleFilter, statusFilter, planFilter],
   );
 
-  const toggleStatus = (id: string) => {
-    setItems((prev) => prev.map((u) => (u.id === id ? { ...u, status: u.status === "active" ? "suspended" : "active" } : u)));
-    toast.success("Đã cập nhật trạng thái người dùng.");
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      const av = a[sortKey] as string | number;
+      const bv = b[sortKey] as string | number;
+      if (av === bv) return 0;
+      const cmp = av > bv ? 1 : -1;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir]);
+
+  const toggleStatus = async (u: AdminUser) => {
+    const suspending = u.status === "active";
+    if (suspending) {
+      const ok = await confirm({
+        title: `Khoá tài khoản ${u.name}?`,
+        description: "Người dùng sẽ không thể đăng nhập cho đến khi bạn mở khoá lại.",
+        tone: "warn", confirmLabel: "Khoá tài khoản",
+      });
+      if (!ok) return;
+    }
+    setItems((prev) => prev.map((x) => (x.id === u.id ? { ...x, status: suspending ? "suspended" : "active" } : x)));
+    toast.success(suspending ? "Đã khoá người dùng." : "Đã mở khoá người dùng.");
   };
-  const upgrade = (id: string) => {
-    setItems((prev) => prev.map((u) => (u.id === id ? { ...u, plan: u.plan === "Free" ? "Pro" : "Pro+" } : u)));
+  const upgrade = async (u: AdminUser) => {
+    const next = u.plan === "Free" ? "Pro" : "Pro+";
+    const ok = await confirm({
+      title: `Nâng gói cho ${u.name}?`,
+      description: `Sẽ nâng từ ${u.plan} lên ${next}. Hành động này có thể ảnh hưởng đến billing.`,
+      tone: "default", confirmLabel: "Nâng gói",
+    });
+    if (!ok) return;
+    setItems((prev) => prev.map((x) => (x.id === u.id ? { ...x, plan: next } : x)));
     toast.success("Đã nâng gói cho người dùng.");
   };
-  const remove = (id: string) => {
-    setItems((prev) => prev.filter((u) => u.id !== id));
-    setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
+  const remove = async (u: AdminUser) => {
+    const ok = await confirm({
+      title: `Xoá người dùng ${u.name}?`,
+      description: "Hành động này không thể hoàn tác. Tất cả dữ liệu của người dùng sẽ bị xoá.",
+      tone: "danger", confirmLabel: "Xoá vĩnh viễn",
+    });
+    if (!ok) return;
+    setItems((prev) => prev.filter((x) => x.id !== u.id));
+    setSelected((prev) => { const n = new Set(prev); n.delete(u.id); return n; });
     toast.success("Đã xoá người dùng.");
   };
   const setRole = (id: string, role: AdminRole) => {
     setItems((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
     toast.success(`Đã gán quyền ${role}.`);
   };
-  const impersonate = (u: AdminUser) => {
+  const impersonate = async (u: AdminUser) => {
+    const ok = await confirm({
+      title: `Đăng nhập với tư cách ${u.name}?`,
+      description: "Hành động này sẽ được ghi vào audit log và bạn sẽ thấy giao diện đúng như người dùng đang thấy.",
+      tone: "warn", confirmLabel: "Tiếp tục",
+    });
+    if (!ok) return;
     toast.success(`Đang đăng nhập với tư cách ${u.name}…`, { description: "Chế độ giả lập — dùng để hỗ trợ / debug." });
   };
   const resetPassword = (u: AdminUser) => toast.success(`Đã gửi email đặt lại mật khẩu tới ${u.email}.`);
@@ -179,11 +231,23 @@ function UsersPanel() {
     else setSelected(new Set(filtered.map((u) => u.id)));
   };
   const selectedUsers = items.filter((u) => selected.has(u.id));
-  const bulkSuspend = () => {
+  const bulkSuspend = async () => {
+    const ok = await confirm({
+      title: `Khoá ${selected.size} người dùng?`,
+      description: "Tất cả người dùng đã chọn sẽ bị khoá ngay lập tức.",
+      tone: "warn", confirmLabel: "Khoá tất cả",
+    });
+    if (!ok) return;
     setItems((prev) => prev.map((u) => selected.has(u.id) ? { ...u, status: "suspended" } : u));
     toast.success(`Đã khoá ${selected.size} người dùng.`); setSelected(new Set());
   };
-  const bulkUpgrade = () => {
+  const bulkUpgrade = async () => {
+    const ok = await confirm({
+      title: `Nâng gói cho ${selected.size} người dùng?`,
+      description: "Các tài khoản đã chọn sẽ được nâng lên gói cao hơn.",
+      tone: "default", confirmLabel: "Nâng tất cả",
+    });
+    if (!ok) return;
     setItems((prev) => prev.map((u) => selected.has(u.id) ? { ...u, plan: u.plan === "Free" ? "Pro" : "Pro+" } : u));
     toast.success(`Đã nâng gói cho ${selected.size} người dùng.`); setSelected(new Set());
   };
@@ -210,6 +274,16 @@ function UsersPanel() {
             </button>
           ))}
         </div>
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as typeof statusFilter)}
+          options={[["all","Mọi trạng thái"],["active","Hoạt động"],["suspended","Tạm khoá"]]}
+        />
+        <FilterSelect
+          value={planFilter}
+          onChange={(v) => setPlanFilter(v as typeof planFilter)}
+          options={[["all","Mọi gói"],["Free","Free"],["Pro","Pro"],["Pro+","Pro+"]]}
+        />
         <button onClick={exportCsv} className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
           <Download className="size-4" /> Xuất CSV
         </button>
@@ -232,21 +306,27 @@ function UsersPanel() {
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="px-5 py-3 w-10"><input type="checkbox" checked={filtered.length > 0 && filtered.every((u) => selected.has(u.id))} onChange={toggleAll} className="size-4 rounded border-slate-300 text-indigo-600" /></th>
-              <Th>Người dùng</Th><Th>Quyền</Th><Th>Gói</Th><Th>Trạng thái</Th><Th>Hoạt động gần nhất</Th><Th className="text-right">Hành động</Th>
+              <SortableTh sortKey="name" current={sortKey} dir={sortDir} onSort={onSort}>Người dùng</SortableTh>
+              <SortableTh sortKey="role" current={sortKey} dir={sortDir} onSort={onSort}>Quyền</SortableTh>
+              <SortableTh sortKey="plan" current={sortKey} dir={sortDir} onSort={onSort}>Gói</SortableTh>
+              <SortableTh sortKey="status" current={sortKey} dir={sortDir} onSort={onSort}>Trạng thái</SortableTh>
+              <SortableTh sortKey="lastActiveAt" current={sortKey} dir={sortDir} onSort={onSort}>Hoạt động gần nhất</SortableTh>
+              <SortableTh sortKey="lessonsCompleted" current={sortKey} dir={sortDir} onSort={onSort} align="right">Bài đã học</SortableTh>
+              <Th className="text-right">Hành động</Th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filtered.map((u) => (
-              <tr key={u.id} className="hover:bg-slate-50/60">
+            {sorted.map((u) => (
+              <tr key={u.id} className="hover:bg-indigo-50/40 transition-colors group">
                 <td className="px-5"><input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSel(u.id)} className="size-4 rounded border-slate-300 text-indigo-600" /></td>
                 <Td>
-                  <div className="flex items-center gap-3">
-                    <div className="size-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm">{u.name.charAt(0)}</div>
+                  <button onClick={() => setDetail(u)} className="flex items-center gap-3 text-left group/avatar -mx-1 px-1 py-1 rounded-xl hover:bg-white transition">
+                    <div className="size-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm shadow-sm group-hover/avatar:ring-2 group-hover/avatar:ring-indigo-300 transition">{u.name.charAt(0)}</div>
                     <div>
-                      <div className="font-semibold text-slate-800">{u.name}</div>
+                      <div className="font-semibold text-slate-800 group-hover/avatar:text-indigo-700">{u.name}</div>
                       <div className="text-xs text-slate-500">{u.email}</div>
                     </div>
-                  </div>
+                  </button>
                 </Td>
                 <Td><span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-1 rounded-md ${roleColor[u.role]}`}><ShieldCheck className="size-3" />{u.role}</span></Td>
                 <Td><span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${planColor[u.plan]}`}>{u.plan !== "Free" && <Crown className="size-3" />}{u.plan}</span></Td>
@@ -256,27 +336,28 @@ function UsersPanel() {
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"><Ban className="size-3.5" /> Tạm khoá</span>
                 )}</Td>
                 <Td className="text-slate-500 text-xs">{u.lastActiveAt}</Td>
+                <Td className="text-right text-slate-700 font-semibold">{u.lessonsCompleted}</Td>
                 <Td className="text-right">
                   <div className="inline-flex gap-1.5">
                     <ActionButton onClick={() => setDetail(u)} title="Xem chi tiết" tone="slate"><Eye className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => impersonate(u)} title="Đăng nhập với tư cách" tone="green"><LogIn className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => setNotifyTarget([u])} title="Gửi thông báo" tone="amber"><Mail className="size-3.5" /></ActionButton>
-                    <ActionButton onClick={() => upgrade(u.id)} title="Nâng gói" tone="amber"><Crown className="size-3.5" /></ActionButton>
-                    <ActionButton onClick={() => toggleStatus(u.id)} title={u.status === "active" ? "Khoá" : "Mở"} tone="slate">
+                    <ActionButton onClick={() => upgrade(u)} title="Nâng gói" tone="amber"><Crown className="size-3.5" /></ActionButton>
+                    <ActionButton onClick={() => toggleStatus(u)} title={u.status === "active" ? "Khoá" : "Mở"} tone="slate">
                       {u.status === "active" ? <Ban className="size-3.5" /> : <CheckCircle2 className="size-3.5" />}
                     </ActionButton>
-                    <ActionButton onClick={() => remove(u.id)} title="Xoá" tone="red"><Trash2 className="size-3.5" /></ActionButton>
+                    <ActionButton onClick={() => remove(u)} title="Xoá" tone="red"><Trash2 className="size-3.5" /></ActionButton>
                   </div>
                 </Td>
               </tr>
             ))}
-            {filtered.length === 0 && (<tr><td colSpan={7} className="p-8 text-center text-sm text-slate-500">Không có người dùng phù hợp.</td></tr>)}
+            {sorted.length === 0 && (<tr><td colSpan={8} className="p-8 text-center text-sm text-slate-500">Không có người dùng phù hợp.</td></tr>)}
           </tbody>
         </table>
       </div>
 
       {detail && (
-        <UserDetailModal
+        <UserDetailDrawer
           user={detail}
           onClose={() => setDetail(null)}
           onSetRole={(r) => setRole(detail.id, r)}
