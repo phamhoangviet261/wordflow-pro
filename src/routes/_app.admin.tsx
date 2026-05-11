@@ -3,12 +3,15 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Shield, Users, CreditCard, BookOpen, BookMarked, Search, Trash2, Ban,
   CheckCircle2, Crown, Plus, Pencil, X, Eye, LogIn, Mail, Download, ShieldCheck,
-  Activity, Monitor, Clock, AlertTriangle,
+  Activity, Monitor, Clock, AlertTriangle, Receipt, Tag, RotateCcw, TrendingUp, Webhook,
+  RefreshCw, Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   mockUsers, mockSubscriptions, mockLoginHistory, mockActivityLog,
+  mockPayments, mockCoupons, mockWebhooks, mockRevenue,
   type AdminUser, type AdminSubscription, type AdminRole,
+  type PaymentRecord, type Coupon, type WebhookLog,
 } from "@/lib/admin-mock";
 import type { Word, VocabSet } from "@/lib/mock-data";
 import { useVocabSets, addVocabSet, updateVocabSet, deleteVocabSet } from "@/lib/sets-store";
@@ -446,6 +449,14 @@ function SubsPanel() {
   const cancel = (id: string) => { setItems((prev) => prev.map((s) => (s.id === id ? { ...s, status: "canceled" } : s))); toast.success("Đã huỷ gói đăng ký."); };
   const reactivate = (id: string) => { setItems((prev) => prev.map((s) => (s.id === id ? { ...s, status: "active" } : s))); toast.success("Đã kích hoạt lại gói."); };
   const revenue = items.filter((s) => s.status === "active").reduce((sum, s) => sum + s.amount, 0);
+  const [section, setSection] = useState<"billing" | "metrics" | "coupons" | "webhooks">("billing");
+
+  const sections: { id: typeof section; label: string; icon: typeof Receipt }[] = [
+    { id: "billing", label: "Billing & Hoàn tiền", icon: Receipt },
+    { id: "metrics", label: "Doanh thu (MRR/ARR)", icon: TrendingUp },
+    { id: "coupons", label: "Mã giảm giá & Trial", icon: Tag },
+    { id: "webhooks", label: "Webhook logs", icon: Webhook },
+  ];
 
   return (
     <div className="space-y-4">
@@ -454,10 +465,53 @@ function SubsPanel() {
         <div className="text-3xl font-extrabold mt-1">{revenue.toLocaleString("vi-VN")} ₫</div>
         <div className="text-xs opacity-80 mt-1">Dựa trên {items.filter((s) => s.status === "active").length} gói đang hoạt động</div>
       </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-1.5 inline-flex gap-1 flex-wrap">
+        {sections.map((s) => {
+          const active = section === s.id;
+          return (
+            <button key={s.id} onClick={() => setSection(s.id)}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition ${active ? "bg-indigo-100 text-indigo-700" : "text-slate-600 hover:bg-slate-50"}`}>
+              <s.icon className="size-4" />{s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {section === "billing" && <BillingSection items={items} userById={userById} cancel={cancel} reactivate={reactivate} />}
+      {section === "metrics" && <RevenueSection />}
+      {section === "coupons" && <CouponsSection />}
+      {section === "webhooks" && <WebhooksSection />}
+    </div>
+  );
+}
+
+function BillingSection({
+  items, userById, cancel, reactivate,
+}: {
+  items: AdminSubscription[];
+  userById: Map<string, AdminUser>;
+  cancel: (id: string) => void; reactivate: (id: string) => void;
+}) {
+  const [autoRenew, setAutoRenew] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(items.map((s) => [s.id, s.status === "active"])),
+  );
+  const [refundFor, setRefundFor] = useState<PaymentRecord | null>(null);
+  const [payments, setPayments] = useState<PaymentRecord[]>(mockPayments);
+
+  const refund = (id: string, reason: string) => {
+    setPayments((prev) => prev.map((p) => (p.id === id ? { ...p, status: "refunded" } : p)));
+    toast.success(`Đã hoàn tiền${reason ? ` (${reason})` : ""}.`);
+    setRefundFor(null);
+  };
+
+  return (
+    <div className="space-y-4">
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-100 text-xs font-bold uppercase text-slate-500">Quản lý billing</div>
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
-            <tr><Th>Người dùng</Th><Th>Gói</Th><Th>Giá</Th><Th>Chu kỳ</Th><Th>Gia hạn</Th><Th>Trạng thái</Th><Th className="text-right">Hành động</Th></tr>
+            <tr><Th>Người dùng</Th><Th>Gói</Th><Th>Giá</Th><Th>Chu kỳ</Th><Th>Hết hạn</Th><Th>Auto-renew</Th><Th>Trạng thái</Th><Th className="text-right">Hành động</Th></tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {items.map((s) => {
@@ -469,6 +523,12 @@ function SubsPanel() {
                   <Td className="font-semibold text-slate-800">{s.amount.toLocaleString("vi-VN")} ₫</Td>
                   <Td className="text-slate-600 text-xs">{s.cycle === "month" ? "Tháng" : "Năm"}</Td>
                   <Td className="text-slate-500 text-xs">{s.renewsAt}</Td>
+                  <Td>
+                    <button onClick={() => setAutoRenew((prev) => ({ ...prev, [s.id]: !prev[s.id] }))}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${autoRenew[s.id] ? "bg-green-500" : "bg-slate-300"}`}>
+                      <span className={`inline-block size-4 rounded-full bg-white shadow transition-transform ${autoRenew[s.id] ? "translate-x-4" : "translate-x-0.5"}`} />
+                    </button>
+                  </Td>
                   <Td><span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${subStatusColor[s.status]}`}>{s.status}</span></Td>
                   <Td className="text-right">
                     {s.status === "active"
@@ -481,6 +541,325 @@ function SubsPanel() {
           </tbody>
         </table>
       </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+          <div className="text-xs font-bold uppercase text-slate-500">Lịch sử thanh toán</div>
+          <button onClick={() => toast.success("Đã xuất hoá đơn.")} className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700"><Download className="size-3.5" /> Xuất hoá đơn</button>
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+            <tr><Th>Ngày</Th><Th>Người dùng</Th><Th>Số tiền</Th><Th>Phương thức</Th><Th>Hoá đơn</Th><Th>Trạng thái</Th><Th className="text-right">Hành động</Th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {payments.map((p) => {
+              const sub = items.find((s) => s.id === p.subId);
+              const u = sub ? userById.get(sub.userId) : null;
+              return (
+                <tr key={p.id} className="hover:bg-slate-50/60">
+                  <Td className="text-slate-600 text-xs">{p.at}</Td>
+                  <Td><div className="font-semibold text-slate-800 text-sm">{u?.name ?? "—"}</div><div className="text-xs text-slate-500">{u?.email}</div></Td>
+                  <Td className="font-semibold">{p.amount.toLocaleString("vi-VN")} ₫</Td>
+                  <Td><span className="text-[10px] font-bold uppercase px-2 py-1 rounded-md bg-slate-100 text-slate-700">{p.method}</span></Td>
+                  <Td className="text-xs font-mono text-slate-500">{p.invoice}</Td>
+                  <Td>
+                    {p.status === "paid" && <span className="text-xs font-semibold text-green-600">✓ Đã thanh toán</span>}
+                    {p.status === "refunded" && <span className="text-xs font-semibold text-amber-600">↺ Đã hoàn tiền</span>}
+                    {p.status === "failed" && <span className="text-xs font-semibold text-red-600">✕ Thất bại</span>}
+                  </Td>
+                  <Td className="text-right">
+                    {p.status === "paid"
+                      ? <ActionButton onClick={() => setRefundFor(p)} title="Hoàn tiền" tone="amber"><RotateCcw className="size-3.5" /></ActionButton>
+                      : <span className="text-xs text-slate-400">—</span>}
+                  </Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {refundFor && <RefundModal payment={refundFor} onClose={() => setRefundFor(null)} onConfirm={(reason) => refund(refundFor.id, reason)} />}
+    </div>
+  );
+}
+
+function RefundModal({ payment, onClose, onConfirm }: { payment: PaymentRecord; onClose: () => void; onConfirm: (reason: string) => void }) {
+  const [reason, setReason] = useState("Yêu cầu của khách hàng");
+  const [partial, setPartial] = useState(false);
+  const [amount, setAmount] = useState(payment.amount);
+  return (
+    <Modal title="Hoàn tiền giao dịch" onClose={onClose}>
+      <div className="space-y-4">
+        <div className="bg-slate-50 rounded-xl p-3 text-sm">
+          <div className="text-slate-500 text-xs">Hoá đơn</div>
+          <div className="font-mono font-semibold">{payment.invoice}</div>
+          <div className="text-slate-500 text-xs mt-2">Số tiền gốc</div>
+          <div className="font-bold text-slate-800">{payment.amount.toLocaleString("vi-VN")} ₫ · {payment.method}</div>
+        </div>
+        <Field label="Loại hoàn tiền">
+          <div className="flex gap-1.5">
+            <button onClick={() => { setPartial(false); setAmount(payment.amount); }} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${!partial ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"}`}>Toàn bộ</button>
+            <button onClick={() => setPartial(true)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${partial ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"}`}>Một phần</button>
+          </div>
+        </Field>
+        {partial && (
+          <Field label="Số tiền hoàn (₫)">
+            <input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} max={payment.amount} min={1}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+          </Field>
+        )}
+        <Field label="Lý do">
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+        </Field>
+      </div>
+      <ModalActions onClose={onClose} onSave={() => onConfirm(`${partial ? `${amount.toLocaleString("vi-VN")}₫ — ` : ""}${reason}`)} saveLabel="Xác nhận hoàn tiền" />
+    </Modal>
+  );
+}
+
+function RevenueSection() {
+  const r = mockRevenue;
+  const max = Math.max(...r.history.map((h) => h.mrr));
+  const cards = [
+    { label: "MRR", value: `${(r.mrr / 1000000).toFixed(1)}M ₫`, hint: "Doanh thu định kỳ tháng", tone: "from-indigo-500 to-purple-600" },
+    { label: "ARR", value: `${(r.arr / 1000000).toFixed(0)}M ₫`, hint: "Doanh thu định kỳ năm", tone: "from-blue-500 to-cyan-600" },
+    { label: "Churn rate", value: `${r.churnRate}%`, hint: "Tỷ lệ rời bỏ tháng này", tone: "from-rose-500 to-red-600" },
+    { label: "Conversion", value: `${r.conversionRate}%`, hint: "Free → Pro", tone: "from-green-500 to-emerald-600" },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {cards.map((c) => (
+          <div key={c.label} className={`rounded-2xl p-4 text-white shadow-md bg-gradient-to-br ${c.tone}`}>
+            <div className="text-xs uppercase tracking-wider opacity-80">{c.label}</div>
+            <div className="text-2xl font-extrabold mt-1">{c.value}</div>
+            <div className="text-[11px] opacity-80 mt-1">{c.hint}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-slate-800">Tăng trưởng MRR (6 tháng)</h3>
+            <span className="text-xs text-green-600 font-semibold">↑ +52%</span>
+          </div>
+          <div className="flex items-end gap-3 h-40">
+            {r.history.map((h) => (
+              <div key={h.month} className="flex-1 flex flex-col items-center gap-2">
+                <div className="text-[10px] text-slate-500 font-semibold">{(h.mrr / 1000000).toFixed(1)}M</div>
+                <div className="w-full bg-gradient-to-t from-indigo-500 to-purple-400 rounded-t-lg" style={{ height: `${(h.mrr / max) * 100}%` }} />
+                <div className="text-[10px] text-slate-500">{h.month}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 className="text-sm font-bold text-slate-800 mb-3">Trial 7 ngày</h3>
+          <div className="space-y-3">
+            <Stat label="Đang trial" value={r.trialActive} />
+            <Stat label="Đã chuyển đổi" value={`${r.trialConverted} (${Math.round((r.trialConverted/r.trialActive)*100)}%)`} />
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-700">
+              <div className="font-bold flex items-center gap-1.5"><ShieldCheck className="size-3.5" /> Anti-abuse đang bật</div>
+              <div className="opacity-80 mt-1">Chặn theo email, IP, fingerprint thiết bị · giới hạn 1 trial/người.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CouponsSection() {
+  const [items, setItems] = useState<Coupon[]>(mockCoupons);
+  const [creating, setCreating] = useState(false);
+
+  const togglePause = (id: string) => {
+    setItems((prev) => prev.map((c) => c.id === id ? { ...c, status: c.status === "active" ? "paused" : "active" } : c));
+    toast.success("Đã cập nhật mã.");
+  };
+  const remove = (id: string) => { setItems((prev) => prev.filter((c) => c.id !== id)); toast.success("Đã xoá mã."); };
+  const copy = (code: string) => { navigator.clipboard?.writeText(code); toast.success(`Đã copy ${code}`); };
+
+  const statusColor: Record<Coupon["status"], string> = {
+    active: "bg-green-100 text-green-700",
+    expired: "bg-slate-100 text-slate-500",
+    paused: "bg-amber-100 text-amber-700",
+  };
+  const typeLabel: Record<Coupon["type"], string> = { percent: "% giảm giá", fixed: "₫ giảm cố định", trial: "Ngày dùng thử" };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-700 transition">
+          <Plus className="size-4" /> Tạo mã giảm giá
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+            <tr><Th>Mã</Th><Th>Loại</Th><Th>Giá trị</Th><Th>Sử dụng</Th><Th>Hết hạn</Th><Th>Trạng thái</Th><Th className="text-right">Hành động</Th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {items.map((c) => {
+              const pct = Math.min(100, (c.usage / c.limit) * 100);
+              return (
+                <tr key={c.id} className="hover:bg-slate-50/60">
+                  <Td><div className="inline-flex items-center gap-2 font-mono font-bold text-slate-800">{c.code}<button onClick={() => copy(c.code)} className="text-slate-400 hover:text-indigo-600"><Copy className="size-3.5" /></button></div></Td>
+                  <Td className="text-xs text-slate-600">{typeLabel[c.type]}</Td>
+                  <Td className="font-semibold">{c.type === "percent" ? `${c.value}%` : c.type === "trial" ? `${c.value} ngày` : `${c.value.toLocaleString("vi-VN")}₫`}</Td>
+                  <Td>
+                    <div className="text-xs text-slate-600">{c.usage}/{c.limit}</div>
+                    <div className="mt-1 h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: `${pct}%` }} /></div>
+                  </Td>
+                  <Td className="text-xs text-slate-500">{c.expires}</Td>
+                  <Td><span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${statusColor[c.status]}`}>{c.status}</span></Td>
+                  <Td className="text-right">
+                    <div className="inline-flex gap-1.5">
+                      {c.status !== "expired" && (
+                        <ActionButton onClick={() => togglePause(c.id)} title={c.status === "active" ? "Tạm dừng" : "Kích hoạt"} tone={c.status === "active" ? "amber" : "green"}>
+                          {c.status === "active" ? <Ban className="size-3.5" /> : <CheckCircle2 className="size-3.5" />}
+                        </ActionButton>
+                      )}
+                      <ActionButton onClick={() => remove(c.id)} title="Xoá" tone="red"><Trash2 className="size-3.5" /></ActionButton>
+                    </div>
+                  </Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {creating && (
+        <CouponEditor
+          onClose={() => setCreating(false)}
+          onSave={(c) => { setItems((p) => [{ ...c, id: `c${Date.now()}`, usage: 0, status: "active" }, ...p]); setCreating(false); toast.success("Đã tạo mã giảm giá."); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function CouponEditor({ onClose, onSave }: { onClose: () => void; onSave: (c: Omit<Coupon, "id" | "usage" | "status">) => void }) {
+  const [code, setCode] = useState("");
+  const [type, setType] = useState<Coupon["type"]>("percent");
+  const [value, setValue] = useState(20);
+  const [limit, setLimit] = useState(100);
+  const [expires, setExpires] = useState("2026-12-31");
+  const submit = () => {
+    if (!code.trim()) { toast.error("Vui lòng nhập mã."); return; }
+    onSave({ code: code.trim().toUpperCase(), type, value, limit, expires });
+  };
+  return (
+    <Modal title="Tạo mã giảm giá mới" onClose={onClose}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Field label="Mã" className="md:col-span-2"><Input value={code} onChange={setCode} placeholder="WELCOME30" /></Field>
+        <Field label="Loại">
+          <div className="flex gap-1.5 flex-wrap">
+            {(["percent","fixed","trial"] as const).map((t) => (
+              <button key={t} onClick={() => setType(t)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${type === t ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"}`}>
+                {t === "percent" ? "% giảm" : t === "fixed" ? "₫ cố định" : "Trial ngày"}
+              </button>
+            ))}
+          </div>
+        </Field>
+        <Field label="Giá trị">
+          <input type="number" value={value} onChange={(e) => setValue(Number(e.target.value))}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+        </Field>
+        <Field label="Giới hạn lượt dùng">
+          <input type="number" value={limit} onChange={(e) => setLimit(Number(e.target.value))}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+        </Field>
+        <Field label="Hết hạn">
+          <input type="date" value={expires} onChange={(e) => setExpires(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+        </Field>
+      </div>
+      <ModalActions onClose={onClose} onSave={submit} saveLabel="Tạo mã" />
+    </Modal>
+  );
+}
+
+function WebhooksSection() {
+  const [provider, setProvider] = useState<"all" | WebhookLog["provider"]>("all");
+  const [items, setItems] = useState<WebhookLog[]>(mockWebhooks);
+  const [detail, setDetail] = useState<WebhookLog | null>(null);
+  const filtered = useMemo(() => items.filter((w) => provider === "all" || w.provider === provider), [items, provider]);
+
+  const retry = (id: string) => {
+    setItems((prev) => prev.map((w) => w.id === id ? { ...w, status: "success", responseMs: 180 } : w));
+    toast.success("Đã gửi lại webhook.");
+  };
+
+  const providerColor: Record<WebhookLog["provider"], string> = {
+    Stripe: "bg-violet-100 text-violet-700",
+    PayPal: "bg-blue-100 text-blue-700",
+    Momo: "bg-pink-100 text-pink-700",
+    VNPay: "bg-cyan-100 text-cyan-700",
+  };
+  const statusColor: Record<WebhookLog["status"], string> = {
+    success: "bg-green-100 text-green-700",
+    failed: "bg-red-100 text-red-700",
+    retry: "bg-amber-100 text-amber-700",
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-1.5 flex-wrap">
+        {(["all", "Stripe", "PayPal", "Momo", "VNPay"] as const).map((p) => (
+          <button key={p} onClick={() => setProvider(p)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${provider === p ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+            {p === "all" ? "Tất cả" : p}
+          </button>
+        ))}
+      </div>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+            <tr><Th>Thời gian</Th><Th>Nhà cung cấp</Th><Th>Sự kiện</Th><Th>Phản hồi</Th><Th>Trạng thái</Th><Th>Payload ID</Th><Th className="text-right">Hành động</Th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {filtered.map((w) => (
+              <tr key={w.id} className="hover:bg-slate-50/60">
+                <Td className="text-xs text-slate-600 font-mono">{w.at}</Td>
+                <Td><span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${providerColor[w.provider]}`}>{w.provider}</span></Td>
+                <Td className="font-mono text-xs text-slate-700">{w.event}</Td>
+                <Td className={`text-xs ${w.responseMs > 1000 ? "text-amber-600 font-bold" : "text-slate-500"}`}>{w.responseMs}ms</Td>
+                <Td><span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${statusColor[w.status]}`}>{w.status}</span></Td>
+                <Td className="text-xs font-mono text-slate-400 truncate max-w-[160px]">{w.payloadId}</Td>
+                <Td className="text-right">
+                  <div className="inline-flex gap-1.5">
+                    <ActionButton onClick={() => setDetail(w)} title="Xem payload" tone="slate"><Eye className="size-3.5" /></ActionButton>
+                    {w.status !== "success" && <ActionButton onClick={() => retry(w.id)} title="Gửi lại" tone="green"><RefreshCw className="size-3.5" /></ActionButton>}
+                  </div>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {detail && (
+        <Modal title={`${detail.provider} · ${detail.event}`} onClose={() => setDetail(null)}>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><div className="text-xs text-slate-500">Thời gian</div><div className="font-mono">{detail.at}</div></div>
+              <div><div className="text-xs text-slate-500">Phản hồi</div><div className="font-semibold">{detail.responseMs}ms</div></div>
+              <div><div className="text-xs text-slate-500">Payload ID</div><div className="font-mono break-all">{detail.payloadId}</div></div>
+              <div><div className="text-xs text-slate-500">Trạng thái</div><div className="font-semibold uppercase">{detail.status}</div></div>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase text-slate-500 mb-1.5">Payload (mock)</div>
+              <pre className="bg-slate-900 text-green-300 text-xs rounded-xl p-4 overflow-auto max-h-72">{JSON.stringify({
+                id: detail.payloadId, type: detail.event, created: detail.at, livemode: true,
+                data: { object: { id: detail.payloadId, status: detail.status, amount: 99000, currency: "vnd" } },
+              }, null, 2)}</pre>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
