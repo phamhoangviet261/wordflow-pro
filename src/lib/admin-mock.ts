@@ -161,3 +161,132 @@ export const mockSubscriptions: AdminSubscription[] = [
   { id: "s4", userId: "u6", plan: "Pro+", amount: 199000, cycle: "month", startedAt: "2024-04-08", renewsAt: "2026-06-08", status: "active" },
   { id: "s5", userId: "u4", plan: "Pro", amount: 99000, cycle: "month", startedAt: "2025-02-01", renewsAt: "2026-04-01", status: "canceled" },
 ];
+
+// ============ Security ============
+
+export type AdminTwoFactor = {
+  userId: string;
+  enabled: boolean;
+  method: "TOTP" | "SMS" | "Email";
+  enrolledAt: string;
+  lastUsedAt: string;
+};
+
+export const mockAdminTwoFactor: AdminTwoFactor[] = [
+  { userId: "u1", enabled: true, method: "TOTP", enrolledAt: "2025-02-10", lastUsedAt: "2026-05-11 09:42" },
+  { userId: "u3", enabled: true, method: "TOTP", enrolledAt: "2025-04-22", lastUsedAt: "2026-05-11 08:15" },
+  { userId: "u5", enabled: false, method: "Email", enrolledAt: "—", lastUsedAt: "—" },
+];
+
+export type AuditLog = {
+  id: string;
+  at: string;
+  actor: string;
+  actorRole: AdminRole;
+  action: string;
+  target: string;
+  ip: string;
+  severity: "info" | "warn" | "critical";
+};
+
+export const mockAuditLogs: AuditLog[] = [
+  { id: "a1", at: "2026-05-11 09:48:12", actor: "an.nguyen@example.com", actorRole: "Admin", action: "user.role.update", target: "u5 → Editor", ip: "113.161.42.18", severity: "warn" },
+  { id: "a2", at: "2026-05-11 09:42:01", actor: "an.nguyen@example.com", actorRole: "Admin", action: "auth.login", target: "Admin Console", ip: "113.161.42.18", severity: "info" },
+  { id: "a3", at: "2026-05-11 08:15:33", actor: "cuong.le@example.com", actorRole: "Moderator", action: "word.publish", target: "abandon (#1)", ip: "171.244.10.2", severity: "info" },
+  { id: "a4", at: "2026-05-10 22:04:18", actor: "an.nguyen@example.com", actorRole: "Admin", action: "user.suspend", target: "u4 (dao.pham)", ip: "113.161.42.18", severity: "critical" },
+  { id: "a5", at: "2026-05-10 18:30:12", actor: "system", actorRole: "Admin", action: "subscription.refund", target: "INV-2026-0301-013 (PayPal)", ip: "—", severity: "warn" },
+  { id: "a6", at: "2026-05-10 11:08:05", actor: "huy.do@example.com", actorRole: "Editor", action: "set.update", target: "Business English (#2)", ip: "27.72.11.9", severity: "info" },
+  { id: "a7", at: "2026-05-09 20:11:55", actor: "unknown", actorRole: "User", action: "auth.login.fail", target: "an.nguyen@example.com (×5)", ip: "45.117.80.91", severity: "critical" },
+];
+
+export type RateLimitRule = {
+  id: string;
+  endpoint: string;
+  limit: number;
+  window: string;
+  scope: "ip" | "user" | "global";
+  enabled: boolean;
+  hits24h: number;
+  blocked24h: number;
+};
+
+export const mockRateLimits: RateLimitRule[] = [
+  { id: "r1", endpoint: "POST /api/auth/login", limit: 5, window: "1 phút", scope: "ip", enabled: true, hits24h: 1284, blocked24h: 18 },
+  { id: "r2", endpoint: "POST /api/auth/register", limit: 3, window: "1 giờ", scope: "ip", enabled: true, hits24h: 312, blocked24h: 4 },
+  { id: "r3", endpoint: "POST /api/auth/forgot", limit: 3, window: "15 phút", scope: "ip", enabled: true, hits24h: 88, blocked24h: 2 },
+  { id: "r4", endpoint: "POST /api/words/*", limit: 60, window: "1 phút", scope: "user", enabled: true, hits24h: 8420, blocked24h: 0 },
+  { id: "r5", endpoint: "GET /api/*", limit: 1000, window: "1 phút", scope: "user", enabled: false, hits24h: 0, blocked24h: 0 },
+];
+
+export type CaptchaConfig = {
+  provider: "hCaptcha" | "reCAPTCHA v3" | "Turnstile";
+  enabledOn: { id: string; label: string; on: boolean }[];
+  threshold: number;
+  challenges24h: number;
+  passRate: number;
+};
+
+export const mockCaptcha: CaptchaConfig = {
+  provider: "Turnstile",
+  threshold: 0.5,
+  challenges24h: 4218,
+  passRate: 96.4,
+  enabledOn: [
+    { id: "login", label: "Đăng nhập", on: true },
+    { id: "register", label: "Đăng ký", on: true },
+    { id: "forgot", label: "Quên mật khẩu", on: true },
+    { id: "comment", label: "Bình luận / Đánh giá", on: false },
+  ],
+};
+
+export type AdminSession = {
+  id: string;
+  userId: string;
+  device: string;
+  ip: string;
+  location: string;
+  startedAt: string;
+  lastSeenAt: string;
+  current: boolean;
+};
+
+export const mockSessions: AdminSession[] = [
+  { id: "sess1", userId: "u1", device: "Chrome 134 · macOS", ip: "113.161.42.18", location: "Hà Nội, VN", startedAt: "2026-05-11 09:42", lastSeenAt: "2026-05-11 10:18", current: true },
+  { id: "sess2", userId: "u1", device: "Safari · iOS 19", ip: "113.161.42.18", location: "Hà Nội, VN", startedAt: "2026-05-10 21:08", lastSeenAt: "2026-05-11 07:50", current: false },
+  { id: "sess3", userId: "u3", device: "Chrome · Android 15", ip: "171.244.10.2", location: "Hồ Chí Minh, VN", startedAt: "2026-05-11 08:15", lastSeenAt: "2026-05-11 10:02", current: false },
+  { id: "sess4", userId: "u6", device: "Edge · Windows 11", ip: "27.72.11.9", location: "Đà Nẵng, VN", startedAt: "2026-05-09 19:50", lastSeenAt: "2026-05-10 22:11", current: false },
+];
+
+export type TrustedDevice = {
+  id: string;
+  userId: string;
+  name: string;
+  fingerprint: string;
+  os: string;
+  trustedAt: string;
+  lastUsedAt: string;
+  trusted: boolean;
+};
+
+export const mockDevices: TrustedDevice[] = [
+  { id: "d1", userId: "u1", name: "MacBook Pro 14", fingerprint: "fp_8a2b...91", os: "macOS 15.4", trustedAt: "2025-02-10", lastUsedAt: "2026-05-11", trusted: true },
+  { id: "d2", userId: "u1", name: "iPhone 17 Pro", fingerprint: "fp_3c1f...44", os: "iOS 19.1", trustedAt: "2025-03-02", lastUsedAt: "2026-05-10", trusted: true },
+  { id: "d3", userId: "u3", name: "Pixel 9", fingerprint: "fp_7d22...b0", os: "Android 15", trustedAt: "2025-04-22", lastUsedAt: "2026-05-11", trusted: true },
+  { id: "d4", userId: "u6", name: "Surface Laptop", fingerprint: "fp_f019...ee", os: "Windows 11", trustedAt: "2024-11-04", lastUsedAt: "2026-05-09", trusted: false },
+];
+
+export type IpBlockEntry = {
+  id: string;
+  ip: string;
+  reason: string;
+  addedBy: string;
+  addedAt: string;
+  expiresAt: string | "permanent";
+  hits: number;
+};
+
+export const mockIpBlocklist: IpBlockEntry[] = [
+  { id: "ip1", ip: "45.117.80.91", reason: "Brute-force đăng nhập (×5)", addedBy: "system", addedAt: "2026-05-09 20:12", expiresAt: "2026-05-16 20:12", hits: 38 },
+  { id: "ip2", ip: "192.0.2.144", reason: "Spam API webhook", addedBy: "an.nguyen@example.com", addedAt: "2026-04-28 14:00", expiresAt: "permanent", hits: 219 },
+  { id: "ip3", ip: "203.0.113.7", reason: "Đăng ký hàng loạt account ảo", addedBy: "system", addedAt: "2026-05-02 02:48", expiresAt: "2026-06-02 02:48", hits: 71 },
+];
