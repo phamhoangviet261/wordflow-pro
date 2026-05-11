@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, ListChecks, Play, Volume2, Sparkles, Trash2 } from "lucide-react";
+import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
+import { ArrowLeft, ListChecks, Play, Volume2, Sparkles, Trash2, SearchX, Home, RotateCcw } from "lucide-react";
 import { words as allWords } from "@/lib/mock-data";
 import { useVocabSets, deleteVocabSet } from "@/lib/sets-store";
 import { toast } from "sonner";
@@ -12,12 +12,24 @@ export const Route = createFileRoute("/_app/vocab-sets/$setId")({
     ],
   }),
   component: SetDetailPage,
-  notFoundComponent: () => (
-    <div className="max-w-3xl mx-auto py-12 text-center">
-      <h2 className="text-xl font-bold">Không tìm thấy bộ từ</h2>
-      <Link to="/vocab-sets" className="text-blue-600 hover:underline">Quay lại</Link>
-    </div>
-  ),
+  errorComponent: ({ error, reset }) => {
+    const router = useRouter();
+    return (
+      <SetNotFound
+        title="Có lỗi khi tải bộ từ"
+        description={error.message || "Đã xảy ra sự cố không mong muốn."}
+        onRetry={() => { router.invalidate(); reset(); }}
+      />
+    );
+  },
+  notFoundComponent: () => {
+    const { setId } = Route.useParams();
+    return (
+      <SetNotFound
+        description={`Bộ từ vựng với mã "${setId}" không tồn tại hoặc đã bị xoá.`}
+      />
+    );
+  },
 });
 
 const typeColors: Record<string, string> = {
@@ -26,6 +38,48 @@ const typeColors: Record<string, string> = {
   ADJ: "bg-orange-100 text-orange-600",
   ADV: "bg-teal-100 text-teal-600",
 };
+
+function SetNotFound({
+  title = "Không tìm thấy bộ từ vựng",
+  description = "Đường dẫn này có thể đã bị thay đổi, hoặc bộ từ đã bị xoá.",
+  onRetry,
+}: {
+  title?: string;
+  description?: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="max-w-xl mx-auto py-16 px-4 text-center">
+      <div className="mx-auto size-20 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mb-6">
+        <SearchX className="size-10 text-blue-600" />
+      </div>
+      <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">{title}</h1>
+      <p className="mt-3 text-slate-500">{description}</p>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Link
+          to="/vocab-sets"
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-2xl shadow-md transition"
+        >
+          <ArrowLeft className="size-4" /> Về danh sách bộ từ
+        </Link>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm px-5 py-2.5 rounded-2xl border border-slate-200 transition"
+        >
+          <Home className="size-4" /> Trang chủ
+        </Link>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm px-5 py-2.5 rounded-2xl border border-slate-200 transition"
+          >
+            <RotateCcw className="size-4" /> Thử lại
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function SetDetailPage() {
   const { setId } = Route.useParams();
@@ -42,14 +96,7 @@ function SetDetailPage() {
   };
 
   if (!set) {
-    return (
-      <div className="max-w-3xl mx-auto py-12 text-center space-y-3">
-        <h2 className="text-xl font-bold text-slate-800">Bộ từ không tồn tại</h2>
-        <Link to="/vocab-sets" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
-          <ArrowLeft className="size-4" /> Về danh sách
-        </Link>
-      </div>
-    );
+    throw notFound();
   }
 
   const setWords = set.wordIds.map((id) => allWords.find((w) => w.id === id)).filter(Boolean) as typeof allWords;
