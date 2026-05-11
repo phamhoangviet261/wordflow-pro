@@ -373,12 +373,30 @@ function UsersPanel() {
   );
 }
 
-function UserDetailModal({
+function UserDetailDrawer({
   user, onClose, onSetRole, onImpersonate, onResetPassword, onNotify,
 }: {
   user: AdminUser; onClose: () => void;
   onSetRole: (r: AdminRole) => void; onImpersonate: () => void; onResetPassword: () => void; onNotify: () => void;
 }) {
+  const allWords = useWords();
+  const learnedWords = useMemo(() => allWords.filter((w) => w.learned).slice(0, 12), [allWords]);
+
+  // Build a 14-day mock streak chart deterministically from the user id.
+  const streakBars = useMemo(() => {
+    const seed = user.id.charCodeAt(user.id.length - 1) || 1;
+    return Array.from({ length: 14 }, (_, i) => {
+      const v = ((Math.sin((i + 1) * seed * 1.7) + 1) / 2) * 100;
+      return Math.round(Math.max(8, v));
+    });
+  }, [user.id]);
+
+  // Payment history for this user: join via subscriptions.
+  const userPayments = useMemo(() => {
+    const subIds = mockSubscriptions.filter((s) => s.userId === user.id).map((s) => s.id);
+    return mockPayments.filter((p) => subIds.includes(p.subId));
+  }, [user.id]);
+
   const logins = mockLoginHistory[user.id] ?? mockLoginHistory.default;
   const activity = mockActivityLog[user.id] ?? mockActivityLog.default;
   const activityIcon: Record<string, { icon: typeof Activity; tone: string }> = {
@@ -391,7 +409,7 @@ function UserDetailModal({
   };
 
   return (
-    <Modal title="Chi tiết người dùng" onClose={onClose} wide>
+    <Drawer title="Chi tiết người dùng" subtitle={user.email} onClose={onClose}>
       <div className="space-y-5">
         <div className="flex items-start gap-4">
           <div className="size-16 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-2xl">{user.name.charAt(0)}</div>
@@ -432,13 +450,88 @@ function UserDetailModal({
         </div>
 
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Flame className="size-4 text-orange-500" />
+            <div className="text-xs font-bold uppercase text-slate-500">Streak 14 ngày</div>
+            <span className="ml-auto text-xs text-slate-500">🔥 {user.streak} ngày</span>
+          </div>
+          <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-2xl p-4">
+            <div className="flex items-end gap-1.5 h-24">
+              {streakBars.map((h, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <div
+                    className="w-full bg-gradient-to-t from-orange-500 to-amber-400 rounded-t-md hover:opacity-80 transition"
+                    style={{ height: `${h}%` }}
+                    title={`${h}%`}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-2">
+              <span>-13 ngày</span><span>hôm nay</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <BookOpenIcon className="size-4 text-slate-500" />
+            <div className="text-xs font-bold uppercase text-slate-500">Từ đã học</div>
+            <span className="ml-auto text-xs text-slate-500">{learnedWords.length} từ gần nhất</span>
+          </div>
+          {learnedWords.length === 0 ? (
+            <div className="text-xs text-slate-400 bg-slate-50 rounded-xl px-3 py-4 text-center">Chưa học từ nào.</div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {learnedWords.map((w) => (
+                <span key={w.id} className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-slate-700 text-xs px-2.5 py-1 rounded-lg transition" title={w.meaning}>
+                  <span className="font-semibold">{w.word}</span>
+                  <span className="text-slate-400 text-[10px]">{w.type}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Receipt className="size-4 text-slate-500" />
+            <div className="text-xs font-bold uppercase text-slate-500">Lịch sử thanh toán</div>
+          </div>
+          {userPayments.length === 0 ? (
+            <div className="text-xs text-slate-400 bg-slate-50 rounded-xl px-3 py-4 text-center">Người dùng chưa có giao dịch nào.</div>
+          ) : (
+            <div className="border border-slate-200 rounded-2xl overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-50 text-slate-500"><tr><th className="text-left px-3 py-2">Ngày</th><th className="text-left px-3 py-2">Số tiền</th><th className="text-left px-3 py-2">Phương thức</th><th className="text-left px-3 py-2">Hoá đơn</th><th className="text-left px-3 py-2">Trạng thái</th></tr></thead>
+                <tbody className="divide-y divide-slate-100">
+                  {userPayments.map((p) => (
+                    <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-3 py-2 text-slate-600">{p.at}</td>
+                      <td className="px-3 py-2 font-semibold text-slate-800">{p.amount.toLocaleString("vi-VN")} ₫</td>
+                      <td className="px-3 py-2"><span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{p.method}</span></td>
+                      <td className="px-3 py-2 font-mono text-slate-500">{p.invoice}</td>
+                      <td className="px-3 py-2">
+                        {p.status === "paid" && <span className="text-green-600 font-semibold">✓ Đã TT</span>}
+                        {p.status === "refunded" && <span className="text-amber-600 font-semibold">↺ Hoàn tiền</span>}
+                        {p.status === "failed" && <span className="text-red-600 font-semibold">✕ Thất bại</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div>
           <div className="flex items-center gap-2 mb-2"><Monitor className="size-4 text-slate-500" /><div className="text-xs font-bold uppercase text-slate-500">Lịch sử đăng nhập</div></div>
           <div className="border border-slate-200 rounded-2xl overflow-hidden">
             <table className="w-full text-xs">
               <thead className="bg-slate-50 text-slate-500"><tr><th className="text-left px-3 py-2">Thời gian</th><th className="text-left px-3 py-2">IP</th><th className="text-left px-3 py-2">Thiết bị</th><th className="text-left px-3 py-2">Vị trí</th><th className="text-left px-3 py-2">Kết quả</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {logins.map((l, i) => (
-                  <tr key={i} className="hover:bg-slate-50/60">
+                  <tr key={i} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-3 py-2 text-slate-600">{l.at}</td>
                     <td className="px-3 py-2 font-mono text-slate-700">{l.ip}</td>
                     <td className="px-3 py-2 text-slate-600">{l.device}</td>
@@ -474,7 +567,7 @@ function UserDetailModal({
           </ul>
         </div>
       </div>
-    </Modal>
+    </Drawer>
   );
 }
 
