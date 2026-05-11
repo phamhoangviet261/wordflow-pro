@@ -40,3 +40,13 @@ export function deleteVocabSet(id: string) {
   sets = sets.filter((s) => s.id !== id);
   emit();
 }
+
+export function updateVocabSet(id: string, patch: Partial<Omit<VocabSet, "id">>) {
+  sets = sets.map((s) => {
+    if (s.id !== id) return s;
+    const next = { ...s, ...patch } as VocabSet;
+    if (patch.wordIds) next.total = patch.wordIds.length;
+    return next;
+  });
+  emit();
+}
