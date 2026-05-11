@@ -48,6 +48,9 @@ export type VocabSet = {
   learned: number;
   color: string;
   wordIds: string[];
+  status?: "draft" | "published";
+  difficulty?: 1 | 2 | 3 | 4 | 5;
+  tags?: string[];
 };
 
 export const vocabSets: VocabSet[] = [
@@ -62,6 +65,9 @@ export const vocabSets: VocabSet[] = [
 export type Word = {
   id: string; word: string; phonetic: string; meaning: string;
   type: "NOUN" | "VERB" | "ADJ" | "ADV"; example: string; learned: boolean;
+  status?: "draft" | "published";
+  difficulty?: 1 | 2 | 3 | 4 | 5;
+  tags?: string[];
 };
 
 export const words: Word[] = [
