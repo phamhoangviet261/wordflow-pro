@@ -2,10 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Shield, Users, CreditCard, BookOpen, BookMarked, Search, Trash2, Ban,
-  CheckCircle2, Crown, Plus, Pencil, X,
+  CheckCircle2, Crown, Plus, Pencil, X, Eye, LogIn, Mail, Download, ShieldCheck,
+  Activity, Monitor, Clock, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { mockUsers, mockSubscriptions, type AdminUser, type AdminSubscription } from "@/lib/admin-mock";
+import {
+  mockUsers, mockSubscriptions, mockLoginHistory, mockActivityLog,
+  type AdminUser, type AdminSubscription, type AdminRole,
+} from "@/lib/admin-mock";
 import type { Word, VocabSet } from "@/lib/mock-data";
 import { useVocabSets, addVocabSet, updateVocabSet, deleteVocabSet } from "@/lib/sets-store";
 import { useWords, addWord, updateWord, deleteWord } from "@/lib/words-store";
@@ -100,12 +104,30 @@ const planColor: Record<AdminUser["plan"], string> = {
   "Pro+": "bg-amber-100 text-amber-700",
 };
 
+const roleColor: Record<AdminRole, string> = {
+  Admin: "bg-rose-100 text-rose-700",
+  Moderator: "bg-violet-100 text-violet-700",
+  Editor: "bg-sky-100 text-sky-700",
+  User: "bg-slate-100 text-slate-600",
+};
+
+const allRoles: AdminRole[] = ["Admin", "Moderator", "Editor", "User"];
+
 function UsersPanel() {
   const [items, setItems] = useState<AdminUser[]>(mockUsers);
   const [q, setQ] = useState("");
+  const [roleFilter, setRoleFilter] = useState<AdminRole | "all">("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [detail, setDetail] = useState<AdminUser | null>(null);
+  const [notifyTarget, setNotifyTarget] = useState<AdminUser[] | null>(null);
+
   const filtered = useMemo(
-    () => items.filter((u) => u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase())),
-    [items, q],
+    () => items.filter((u) => {
+      const matchQ = u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase());
+      const matchRole = roleFilter === "all" || u.role === roleFilter;
+      return matchQ && matchRole;
+    }),
+    [items, q, roleFilter],
   );
 
   const toggleStatus = (id: string) => {
@@ -118,22 +140,84 @@ function UsersPanel() {
   };
   const remove = (id: string) => {
     setItems((prev) => prev.filter((u) => u.id !== id));
+    setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
     toast.success("Đã xoá người dùng.");
+  };
+  const setRole = (id: string, role: AdminRole) => {
+    setItems((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
+    toast.success(`Đã gán quyền ${role}.`);
+  };
+  const impersonate = (u: AdminUser) => {
+    toast.success(`Đang đăng nhập với tư cách ${u.name}…`, { description: "Chế độ giả lập — dùng để hỗ trợ / debug." });
+  };
+  const resetPassword = (u: AdminUser) => toast.success(`Đã gửi email đặt lại mật khẩu tới ${u.email}.`);
+
+  const toggleSel = (id: string) => setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () => {
+    if (filtered.every((u) => selected.has(u.id))) setSelected(new Set());
+    else setSelected(new Set(filtered.map((u) => u.id)));
+  };
+  const selectedUsers = items.filter((u) => selected.has(u.id));
+  const bulkSuspend = () => {
+    setItems((prev) => prev.map((u) => selected.has(u.id) ? { ...u, status: "suspended" } : u));
+    toast.success(`Đã khoá ${selected.size} người dùng.`); setSelected(new Set());
+  };
+  const bulkUpgrade = () => {
+    setItems((prev) => prev.map((u) => selected.has(u.id) ? { ...u, plan: u.plan === "Free" ? "Pro" : "Pro+" } : u));
+    toast.success(`Đã nâng gói cho ${selected.size} người dùng.`); setSelected(new Set());
+  };
+  const exportCsv = () => {
+    const rows = [
+      ["id","name","email","role","plan","status","streak","joinedAt","lastActiveAt","lessonsCompleted"],
+      ...(selectedUsers.length ? selectedUsers : filtered).map((u) => [u.id,u.name,u.email,u.role,u.plan,u.status,u.streak,u.joinedAt,u.lastActiveAt,u.lessonsCompleted]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = "users.csv"; a.click(); URL.revokeObjectURL(url);
+    toast.success("Đã xuất CSV.");
   };
 
   return (
     <div className="space-y-4">
-      <SearchBar value={q} onChange={setQ} placeholder="Tìm theo tên hoặc email..." />
+      <div className="flex items-center gap-3 flex-wrap">
+        <SearchBar value={q} onChange={setQ} placeholder="Tìm theo tên hoặc email..." />
+        <div className="flex gap-1.5 flex-wrap">
+          {(["all", ...allRoles] as const).map((r) => (
+            <button key={r} onClick={() => setRoleFilter(r)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${roleFilter === r ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+              {r === "all" ? "Tất cả" : r}
+            </button>
+          ))}
+        </div>
+        <button onClick={exportCsv} className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+          <Download className="size-4" /> Xuất CSV
+        </button>
+      </div>
+
+      {selected.size > 0 && (
+        <div className="flex items-center gap-2 flex-wrap bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3">
+          <span className="text-sm font-semibold text-indigo-700">Đã chọn {selected.size}</span>
+          <div className="ml-auto flex gap-2 flex-wrap">
+            <button onClick={bulkUpgrade} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition"><Crown className="size-3.5" /> Nâng gói</button>
+            <button onClick={bulkSuspend} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition"><Ban className="size-3.5" /> Khoá</button>
+            <button onClick={() => setNotifyTarget(selectedUsers)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition"><Mail className="size-3.5" /> Gửi thông báo</button>
+            <button onClick={() => setSelected(new Set())} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"><X className="size-3.5" /> Bỏ chọn</button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
-              <Th>Người dùng</Th><Th>Gói</Th><Th>Trạng thái</Th><Th>Streak</Th><Th>Tham gia</Th><Th className="text-right">Hành động</Th>
+              <th className="px-5 py-3 w-10"><input type="checkbox" checked={filtered.length > 0 && filtered.every((u) => selected.has(u.id))} onChange={toggleAll} className="size-4 rounded border-slate-300 text-indigo-600" /></th>
+              <Th>Người dùng</Th><Th>Quyền</Th><Th>Gói</Th><Th>Trạng thái</Th><Th>Hoạt động gần nhất</Th><Th className="text-right">Hành động</Th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filtered.map((u) => (
               <tr key={u.id} className="hover:bg-slate-50/60">
+                <td className="px-5"><input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSel(u.id)} className="size-4 rounded border-slate-300 text-indigo-600" /></td>
                 <Td>
                   <div className="flex items-center gap-3">
                     <div className="size-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm">{u.name.charAt(0)}</div>
@@ -143,16 +227,19 @@ function UsersPanel() {
                     </div>
                   </div>
                 </Td>
+                <Td><span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-1 rounded-md ${roleColor[u.role]}`}><ShieldCheck className="size-3" />{u.role}</span></Td>
                 <Td><span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${planColor[u.plan]}`}>{u.plan !== "Free" && <Crown className="size-3" />}{u.plan}</span></Td>
                 <Td>{u.status === "active" ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600"><CheckCircle2 className="size-3.5" /> Hoạt động</span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"><Ban className="size-3.5" /> Tạm khoá</span>
                 )}</Td>
-                <Td className="text-slate-600">🔥 {u.streak}</Td>
-                <Td className="text-slate-500 text-xs">{u.joinedAt}</Td>
+                <Td className="text-slate-500 text-xs">{u.lastActiveAt}</Td>
                 <Td className="text-right">
                   <div className="inline-flex gap-1.5">
+                    <ActionButton onClick={() => setDetail(u)} title="Xem chi tiết" tone="slate"><Eye className="size-3.5" /></ActionButton>
+                    <ActionButton onClick={() => impersonate(u)} title="Đăng nhập với tư cách" tone="green"><LogIn className="size-3.5" /></ActionButton>
+                    <ActionButton onClick={() => setNotifyTarget([u])} title="Gửi thông báo" tone="amber"><Mail className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => upgrade(u.id)} title="Nâng gói" tone="amber"><Crown className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => toggleStatus(u.id)} title={u.status === "active" ? "Khoá" : "Mở"} tone="slate">
                       {u.status === "active" ? <Ban className="size-3.5" /> : <CheckCircle2 className="size-3.5" />}
@@ -162,11 +249,188 @@ function UsersPanel() {
                 </Td>
               </tr>
             ))}
-            {filtered.length === 0 && (<tr><td colSpan={6} className="p-8 text-center text-sm text-slate-500">Không có người dùng phù hợp.</td></tr>)}
+            {filtered.length === 0 && (<tr><td colSpan={7} className="p-8 text-center text-sm text-slate-500">Không có người dùng phù hợp.</td></tr>)}
           </tbody>
         </table>
       </div>
+
+      {detail && (
+        <UserDetailModal
+          user={detail}
+          onClose={() => setDetail(null)}
+          onSetRole={(r) => setRole(detail.id, r)}
+          onImpersonate={() => impersonate(detail)}
+          onResetPassword={() => resetPassword(detail)}
+          onNotify={() => setNotifyTarget([detail])}
+        />
+      )}
+      {notifyTarget && (
+        <NotifyModal targets={notifyTarget} onClose={() => setNotifyTarget(null)} onSent={() => setNotifyTarget(null)} />
+      )}
     </div>
+  );
+}
+
+function UserDetailModal({
+  user, onClose, onSetRole, onImpersonate, onResetPassword, onNotify,
+}: {
+  user: AdminUser; onClose: () => void;
+  onSetRole: (r: AdminRole) => void; onImpersonate: () => void; onResetPassword: () => void; onNotify: () => void;
+}) {
+  const logins = mockLoginHistory[user.id] ?? mockLoginHistory.default;
+  const activity = mockActivityLog[user.id] ?? mockActivityLog.default;
+  const activityIcon: Record<string, { icon: typeof Activity; tone: string }> = {
+    email_change: { icon: Mail, tone: "bg-blue-100 text-blue-600" },
+    plan_change: { icon: Crown, tone: "bg-amber-100 text-amber-600" },
+    login_fail: { icon: AlertTriangle, tone: "bg-red-100 text-red-600" },
+    spam_flag: { icon: AlertTriangle, tone: "bg-rose-100 text-rose-600" },
+    password_reset: { icon: ShieldCheck, tone: "bg-violet-100 text-violet-600" },
+    lesson_done: { icon: CheckCircle2, tone: "bg-green-100 text-green-600" },
+  };
+
+  return (
+    <Modal title="Chi tiết người dùng" onClose={onClose} wide>
+      <div className="space-y-5">
+        <div className="flex items-start gap-4">
+          <div className="size-16 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-2xl">{user.name.charAt(0)}</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-bold text-slate-800">{user.name}</h3>
+              <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${roleColor[user.role]}`}>{user.role}</span>
+              <span className={`text-xs font-bold px-2 py-1 rounded-md ${planColor[user.plan]}`}>{user.plan}</span>
+            </div>
+            <div className="text-sm text-slate-500">{user.email}</div>
+            <div className="text-xs text-slate-400 mt-1">Tham gia {user.joinedAt} · ID {user.id}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat label="Bài đã học" value={user.lessonsCompleted} />
+          <Stat label="Streak" value={`🔥 ${user.streak}`} />
+          <Stat label="Hoạt động" value={user.lastActiveAt.split(" ")[0]} hint={user.lastActiveAt.split(" ")[1]} />
+          <Stat label="Trạng thái" value={user.status === "active" ? "Hoạt động" : "Tạm khoá"} />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button onClick={onImpersonate} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition"><LogIn className="size-3.5" /> Đăng nhập với tư cách</button>
+          <button onClick={onResetPassword} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition"><ShieldCheck className="size-3.5" /> Reset mật khẩu</button>
+          <button onClick={onNotify} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition"><Mail className="size-3.5" /> Gửi thông báo</button>
+        </div>
+
+        <div>
+          <div className="text-xs font-bold uppercase text-slate-500 mb-2">Phân quyền</div>
+          <div className="flex gap-1.5 flex-wrap">
+            {allRoles.map((r) => (
+              <button key={r} onClick={() => onSetRole(r)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${user.role === r ? "bg-indigo-600 text-white" : `${roleColor[r]} hover:opacity-80`}`}>
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2"><Monitor className="size-4 text-slate-500" /><div className="text-xs font-bold uppercase text-slate-500">Lịch sử đăng nhập</div></div>
+          <div className="border border-slate-200 rounded-2xl overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 text-slate-500"><tr><th className="text-left px-3 py-2">Thời gian</th><th className="text-left px-3 py-2">IP</th><th className="text-left px-3 py-2">Thiết bị</th><th className="text-left px-3 py-2">Vị trí</th><th className="text-left px-3 py-2">Kết quả</th></tr></thead>
+              <tbody className="divide-y divide-slate-100">
+                {logins.map((l, i) => (
+                  <tr key={i} className="hover:bg-slate-50/60">
+                    <td className="px-3 py-2 text-slate-600">{l.at}</td>
+                    <td className="px-3 py-2 font-mono text-slate-700">{l.ip}</td>
+                    <td className="px-3 py-2 text-slate-600">{l.device}</td>
+                    <td className="px-3 py-2 text-slate-500">{l.location}</td>
+                    <td className="px-3 py-2">
+                      {l.status === "success"
+                        ? <span className="inline-flex items-center gap-1 text-green-600 font-semibold"><CheckCircle2 className="size-3" /> OK</span>
+                        : <span className="inline-flex items-center gap-1 text-red-600 font-semibold"><AlertTriangle className="size-3" /> Lỗi</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2"><Activity className="size-4 text-slate-500" /><div className="text-xs font-bold uppercase text-slate-500">Nhật ký hoạt động</div></div>
+          <ul className="space-y-2">
+            {activity.map((a, i) => {
+              const meta = activityIcon[a.type] ?? { icon: Clock, tone: "bg-slate-100 text-slate-600" };
+              const Icon = meta.icon;
+              return (
+                <li key={i} className="flex items-start gap-3 bg-slate-50 rounded-xl px-3 py-2.5">
+                  <div className={`size-7 rounded-lg flex items-center justify-center ${meta.tone}`}><Icon className="size-3.5" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-slate-700">{a.detail}</div>
+                    <div className="text-[11px] text-slate-400">{a.at}</div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
+  return (
+    <div className="bg-slate-50 rounded-2xl p-3">
+      <div className="text-[11px] font-semibold uppercase text-slate-500">{label}</div>
+      <div className="text-lg font-bold text-slate-800 mt-0.5">{value}</div>
+      {hint && <div className="text-[11px] text-slate-400">{hint}</div>}
+    </div>
+  );
+}
+
+function NotifyModal({ targets, onClose, onSent }: { targets: AdminUser[]; onClose: () => void; onSent: () => void }) {
+  const presets = [
+    { id: "reset", label: "Reset mật khẩu", subject: "Đặt lại mật khẩu", body: "Chúng tôi đã gửi liên kết đặt lại mật khẩu cho bạn." },
+    { id: "warn", label: "Cảnh báo", subject: "Cảnh báo từ VocabLab", body: "Tài khoản của bạn đã có hoạt động bất thường, vui lòng kiểm tra." },
+    { id: "promo", label: "Khuyến mãi", subject: "Ưu đãi đặc biệt 🎉", body: "Nâng cấp Pro+ với ưu đãi -30% chỉ trong tuần này!" },
+  ];
+  const [presetId, setPresetId] = useState(presets[0].id);
+  const preset = presets.find((p) => p.id === presetId)!;
+  const [subject, setSubject] = useState(preset.subject);
+  const [body, setBody] = useState(preset.body);
+
+  useEffect(() => { setSubject(preset.subject); setBody(preset.body); }, [presetId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const send = () => {
+    if (!subject.trim() || !body.trim()) { toast.error("Vui lòng nhập tiêu đề và nội dung."); return; }
+    toast.success(`Đã gửi tới ${targets.length} người dùng.`);
+    onSent();
+  };
+
+  return (
+    <Modal title={`Gửi thông báo (${targets.length} người)`} onClose={onClose}>
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-1.5">
+          {presets.map((p) => (
+            <button key={p.id} onClick={() => setPresetId(p.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${presetId === p.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <Field label="Người nhận">
+          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+            {targets.map((t) => (
+              <span key={t.id} className="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-md">{t.email}</span>
+            ))}
+          </div>
+        </Field>
+        <Field label="Tiêu đề"><Input value={subject} onChange={setSubject} /></Field>
+        <Field label="Nội dung">
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+        </Field>
+      </div>
+      <ModalActions onClose={onClose} onSave={send} saveLabel="Gửi" />
+    </Modal>
   );
 }
 
