@@ -57,6 +57,92 @@ export const mockActivityLog: Record<string, ActivityRecord[]> = {
   ],
 };
 
+export type PaymentRecord = {
+  id: string;
+  subId: string;
+  at: string;
+  amount: number;
+  method: "Stripe" | "PayPal" | "Momo" | "VNPay";
+  status: "paid" | "refunded" | "failed";
+  invoice: string;
+};
+
+export const mockPayments: PaymentRecord[] = [
+  { id: "p1", subId: "s1", at: "2026-05-12", amount: 99000, method: "Stripe", status: "paid", invoice: "INV-2026-0512-001" },
+  { id: "p2", subId: "s1", at: "2026-04-12", amount: 99000, method: "Stripe", status: "paid", invoice: "INV-2026-0412-009" },
+  { id: "p3", subId: "s2", at: "2025-06-21", amount: 1990000, method: "VNPay", status: "paid", invoice: "INV-2025-0621-118" },
+  { id: "p4", subId: "s3", at: "2026-05-30", amount: 99000, method: "Momo", status: "failed", invoice: "INV-2026-0530-042" },
+  { id: "p5", subId: "s4", at: "2026-05-08", amount: 199000, method: "Stripe", status: "paid", invoice: "INV-2026-0508-077" },
+  { id: "p6", subId: "s5", at: "2026-03-01", amount: 99000, method: "PayPal", status: "refunded", invoice: "INV-2026-0301-013" },
+  { id: "p7", subId: "s4", at: "2026-04-08", amount: 199000, method: "Stripe", status: "paid", invoice: "INV-2026-0408-061" },
+];
+
+export type Coupon = {
+  id: string;
+  code: string;
+  type: "percent" | "fixed" | "trial";
+  value: number;
+  usage: number;
+  limit: number;
+  expires: string;
+  status: "active" | "expired" | "paused";
+};
+
+export const mockCoupons: Coupon[] = [
+  { id: "c1", code: "WELCOME30", type: "percent", value: 30, usage: 142, limit: 500, expires: "2026-12-31", status: "active" },
+  { id: "c2", code: "TRIAL7", type: "trial", value: 7, usage: 318, limit: 1000, expires: "2026-12-31", status: "active" },
+  { id: "c3", code: "SUMMER50K", type: "fixed", value: 50000, usage: 88, limit: 200, expires: "2026-08-31", status: "active" },
+  { id: "c4", code: "BLACKFRIDAY", type: "percent", value: 50, usage: 412, limit: 412, expires: "2025-11-30", status: "expired" },
+  { id: "c5", code: "VIP10", type: "percent", value: 10, usage: 6, limit: 50, expires: "2026-12-31", status: "paused" },
+];
+
+export type WebhookLog = {
+  id: string;
+  at: string;
+  provider: "Stripe" | "PayPal" | "Momo" | "VNPay";
+  event: string;
+  status: "success" | "failed" | "retry";
+  responseMs: number;
+  payloadId: string;
+};
+
+export const mockWebhooks: WebhookLog[] = [
+  { id: "w1", at: "2026-05-12 09:42:11", provider: "Stripe", event: "invoice.paid", status: "success", responseMs: 142, payloadId: "evt_1Q8xP2..." },
+  { id: "w2", at: "2026-05-12 09:41:55", provider: "Stripe", event: "customer.subscription.updated", status: "success", responseMs: 98, payloadId: "evt_1Q8xN4..." },
+  { id: "w3", at: "2026-05-11 22:18:03", provider: "VNPay", event: "payment.success", status: "success", responseMs: 312, payloadId: "vnp_847291" },
+  { id: "w4", at: "2026-05-11 14:02:44", provider: "Momo", event: "payment.failed", status: "failed", responseMs: 5012, payloadId: "momo_TXN99812" },
+  { id: "w5", at: "2026-05-11 14:02:48", provider: "Momo", event: "payment.failed", status: "retry", responseMs: 4810, payloadId: "momo_TXN99812" },
+  { id: "w6", at: "2026-05-10 18:30:12", provider: "PayPal", event: "BILLING.SUBSCRIPTION.CANCELLED", status: "success", responseMs: 211, payloadId: "WH-7K2..." },
+  { id: "w7", at: "2026-05-09 11:08:32", provider: "Stripe", event: "charge.refunded", status: "success", responseMs: 156, payloadId: "evt_1Q7vQ8..." },
+];
+
+export type RevenueMetrics = {
+  mrr: number;
+  arr: number;
+  churnRate: number;
+  conversionRate: number;
+  trialActive: number;
+  trialConverted: number;
+  history: { month: string; mrr: number }[];
+};
+
+export const mockRevenue: RevenueMetrics = {
+  mrr: 18450000,
+  arr: 221400000,
+  churnRate: 3.2,
+  conversionRate: 12.8,
+  trialActive: 64,
+  trialConverted: 41,
+  history: [
+    { month: "T12", mrr: 12100000 },
+    { month: "T1", mrr: 13400000 },
+    { month: "T2", mrr: 14250000 },
+    { month: "T3", mrr: 15800000 },
+    { month: "T4", mrr: 17200000 },
+    { month: "T5", mrr: 18450000 },
+  ],
+};
+
 export type AdminSubscription = {
   id: string;
   userId: string;
