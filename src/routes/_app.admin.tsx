@@ -2097,3 +2097,188 @@ function IpBlocklistSection() {
     </div>
   );
 }
+
+// ============ Confirm dialog ============
+
+type ConfirmOptions = {
+  title: string;
+  description?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: "danger" | "warn" | "default";
+};
+
+const ConfirmCtx = createContext<(opts: ConfirmOptions) => Promise<boolean>>(
+  () => Promise.resolve(false),
+);
+
+function useConfirm() {
+  return useContext(ConfirmCtx);
+}
+
+function ConfirmProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<
+    (ConfirmOptions & { resolve: (v: boolean) => void }) | null
+  >(null);
+
+  const ask = useCallback(
+    (opts: ConfirmOptions) =>
+      new Promise<boolean>((resolve) => setState({ ...opts, resolve })),
+    [],
+  );
+  const close = (v: boolean) => {
+    state?.resolve(v);
+    setState(null);
+  };
+  return (
+    <ConfirmCtx.Provider value={ask}>
+      {children}
+      {state && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => close(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="p-6 flex gap-4">
+              <div
+                className={`size-11 shrink-0 rounded-2xl flex items-center justify-center ${
+                  state.tone === "danger"
+                    ? "bg-red-100 text-red-600"
+                    : state.tone === "warn"
+                    ? "bg-amber-100 text-amber-600"
+                    : "bg-indigo-100 text-indigo-600"
+                }`}
+              >
+                {state.tone === "danger" ? (
+                  <AlertOctagon className="size-5" />
+                ) : state.tone === "warn" ? (
+                  <AlertTriangle className="size-5" />
+                ) : (
+                  <ShieldCheck className="size-5" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-slate-800">
+                  {state.title}
+                </h3>
+                {state.description && (
+                  <p className="text-sm text-slate-500 mt-1">
+                    {state.description}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60">
+              <button
+                onClick={() => close(false)}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
+              >
+                {state.cancelLabel ?? "Huỷ"}
+              </button>
+              <button
+                onClick={() => close(true)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm transition ${
+                  state.tone === "danger"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : state.tone === "warn"
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
+              >
+                {state.confirmLabel ?? "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </ConfirmCtx.Provider>
+  );
+}
+
+// ============ Drawer (right-side panel) ============
+
+function Drawer({
+  title,
+  subtitle,
+  onClose,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex justify-end"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white w-full max-w-2xl h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">{title}</h2>
+            {subtitle && (
+              <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="size-9 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 transition"
+            aria-label="Đóng"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ============ Sortable table header ============
+
+type SortDir = "asc" | "desc";
+
+function SortableTh<K extends string>({
+  children,
+  sortKey,
+  current,
+  dir,
+  onSort,
+  className = "",
+  align = "left",
+}: {
+  children: React.ReactNode;
+  sortKey: K;
+  current: K | null;
+  dir: SortDir;
+  onSort: (k: K) => void;
+  className?: string;
+  align?: "left" | "right";
+}) {
+  const active = current === sortKey;
+  return (
+    <th className={`font-semibold px-5 py-3 ${align === "right" ? "text-right" : "text-left"} ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 group transition ${
+          active ? "text-indigo-700" : "text-slate-500 hover:text-slate-700"
+        }`}
+      >
+        <span>{children}</span>
+        {active ? (
+          dir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />
+        ) : (
+          <ArrowUpDown className="size-3 opacity-40 group-hover:opacity-80" />
+        )}
+      </button>
+    </th>
+  );
+}
