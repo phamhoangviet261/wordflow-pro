@@ -1607,3 +1607,489 @@ function VersionHistoryModal({ title, versions, onRestore, onClose }: {
     </Modal>
   );
 }
+
+// ============ Security ============
+
+type SecSection = "twofa" | "audit" | "rate" | "captcha" | "session" | "device" | "ip";
+
+const secSections: { id: SecSection; label: string; icon: typeof Shield }[] = [
+  { id: "twofa", label: "2FA Admin", icon: Lock },
+  { id: "audit", label: "Audit / Action logs", icon: Activity },
+  { id: "rate", label: "Rate limiting", icon: TrendingUp },
+  { id: "captcha", label: "CAPTCHA", icon: ShieldCheck },
+  { id: "session", label: "Session", icon: Monitor },
+  { id: "device", label: "Device", icon: Smartphone },
+  { id: "ip", label: "IP blacklist", icon: Globe },
+];
+
+function SecurityPanel() {
+  const [section, setSection] = useState<SecSection>("twofa");
+  const stats = [
+    { label: "Admin bật 2FA", value: `${mockAdminTwoFactor.filter((t) => t.enabled).length}/${mockAdminTwoFactor.length}`, accent: "bg-emerald-100 text-emerald-700", icon: Lock },
+    { label: "Audit log (24h)", value: mockAuditLogs.length, accent: "bg-indigo-100 text-indigo-700", icon: Activity },
+    { label: "IP bị chặn", value: mockIpBlocklist.length, accent: "bg-rose-100 text-rose-700", icon: Ban },
+    { label: "Phiên đang mở", value: mockSessions.length, accent: "bg-amber-100 text-amber-700", icon: Monitor },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {stats.map((s) => (
+          <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+            <div className={`inline-flex size-9 items-center justify-center rounded-xl ${s.accent}`}>
+              <s.icon className="size-4" />
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-800">{s.value}</div>
+            <div className="text-xs text-slate-500">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-1.5 inline-flex gap-1 flex-wrap">
+        {secSections.map((s) => {
+          const active = section === s.id;
+          return (
+            <button
+              key={s.id}
+              onClick={() => setSection(s.id)}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition ${
+                active ? "bg-indigo-100 text-indigo-700" : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              <s.icon className="size-4" />
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {section === "twofa" && <TwoFactorSection />}
+      {section === "audit" && <AuditLogSection />}
+      {section === "rate" && <RateLimitSection />}
+      {section === "captcha" && <CaptchaSection />}
+      {section === "session" && <SessionSection />}
+      {section === "device" && <DeviceSection />}
+      {section === "ip" && <IpBlocklistSection />}
+    </div>
+  );
+}
+
+function userName(id: string) {
+  return mockUsers.find((u) => u.id === id)?.name ?? id;
+}
+function userEmail(id: string) {
+  return mockUsers.find((u) => u.id === id)?.email ?? "—";
+}
+
+function TwoFactorSection() {
+  const [rows, setRows] = useState(mockAdminTwoFactor);
+  const adminLike = mockUsers.filter((u) => u.role === "Admin" || u.role === "Moderator");
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="p-4 border-b border-slate-100 flex items-start gap-3">
+        <div className="size-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center"><Lock className="size-5" /></div>
+        <div className="flex-1">
+          <div className="font-semibold text-slate-800">Xác thực hai yếu tố (2FA)</div>
+          <div className="text-xs text-slate-500">Bắt buộc bật cho mọi tài khoản Admin & Moderator. Hỗ trợ TOTP (Google Authenticator), SMS, Email OTP.</div>
+        </div>
+        <button onClick={() => toast.success("Đã yêu cầu tất cả admin bật 2FA trong 24h")} className="px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700">Buộc bật toàn bộ</button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50">
+            <tr><Th>Admin</Th><Th>Phương thức</Th><Th>Đăng ký</Th><Th>Lần dùng cuối</Th><Th>Trạng thái</Th><Th className="text-right">Hành động</Th></tr>
+          </thead>
+          <tbody>
+            {adminLike.map((u) => {
+              const tf = rows.find((r) => r.userId === u.id);
+              const enabled = tf?.enabled ?? false;
+              return (
+                <tr key={u.id} className="border-t border-slate-100">
+                  <Td>
+                    <div className="font-medium text-slate-800">{u.name}</div>
+                    <div className="text-xs text-slate-500">{u.email} · <span className={`px-1.5 py-0.5 rounded ${roleColor[u.role]}`}>{u.role}</span></div>
+                  </Td>
+                  <Td>{tf?.method ?? "—"}</Td>
+                  <Td className="text-slate-500">{tf?.enrolledAt ?? "—"}</Td>
+                  <Td className="text-slate-500">{tf?.lastUsedAt ?? "—"}</Td>
+                  <Td>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${enabled ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                      {enabled ? "Đang bật" : "Chưa bật"}
+                    </span>
+                  </Td>
+                  <Td className="text-right">
+                    <div className="inline-flex gap-1">
+                      <ActionButton tone="amber" title="Reset 2FA" onClick={() => toast.success(`Đã reset 2FA cho ${u.name}`)}><RotateCcw className="size-3.5" /></ActionButton>
+                      <ActionButton
+                        tone={enabled ? "red" : "green"}
+                        title={enabled ? "Tắt 2FA" : "Bật 2FA"}
+                        onClick={() => {
+                          setRows((prev) => {
+                            const exists = prev.find((r) => r.userId === u.id);
+                            if (exists) return prev.map((r) => r.userId === u.id ? { ...r, enabled: !r.enabled } : r);
+                            return [...prev, { userId: u.id, enabled: true, method: "TOTP", enrolledAt: new Date().toISOString().slice(0, 10), lastUsedAt: "—" }];
+                          });
+                          toast.success(`Đã ${enabled ? "tắt" : "bật"} 2FA cho ${u.name}`);
+                        }}
+                      >
+                        <Power className="size-3.5" />
+                      </ActionButton>
+                    </div>
+                  </Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AuditLogSection() {
+  const [q, setQ] = useState("");
+  const [sev, setSev] = useState<"all" | AuditLog["severity"]>("all");
+  const [scope, setScope] = useState<"all" | "admin">("all");
+  const filtered = useMemo(() => {
+    return mockAuditLogs.filter((l) => {
+      if (sev !== "all" && l.severity !== sev) return false;
+      if (scope === "admin" && l.actorRole !== "Admin") return false;
+      if (q && !`${l.actor} ${l.action} ${l.target} ${l.ip}`.toLowerCase().includes(q.toLowerCase())) return false;
+      return true;
+    });
+  }, [q, sev, scope]);
+  const sevColor: Record<AuditLog["severity"], string> = {
+    info: "bg-slate-100 text-slate-700",
+    warn: "bg-amber-100 text-amber-700",
+    critical: "bg-rose-100 text-rose-700",
+  };
+  function exportLogs() {
+    const headers = ["at", "actor", "role", "action", "target", "ip", "severity"];
+    const rows = filtered.map((l) => [l.at, l.actor, l.actorRole, l.action, l.target, l.ip, l.severity]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const a = document.createElement("a"); a.href = url; a.download = "audit-logs.csv"; a.click(); URL.revokeObjectURL(url);
+    toast.success("Đã xuất CSV audit logs");
+  }
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="p-4 border-b border-slate-100 flex flex-wrap items-center gap-2">
+        <SearchBar value={q} onChange={setQ} placeholder="Tìm theo actor, action, IP..." />
+        <FilterSelect value={sev} onChange={(v) => setSev(v as typeof sev)} options={[["all", "Mọi mức"], ["info", "Info"], ["warn", "Warn"], ["critical", "Critical"]]} />
+        <FilterSelect value={scope} onChange={(v) => setScope(v as typeof scope)} options={[["all", "Tất cả actor"], ["admin", "Chỉ Admin"]]} />
+        <button onClick={exportLogs} className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200">
+          <Download className="size-3.5" /> Export CSV
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50">
+            <tr><Th>Thời gian</Th><Th>Actor</Th><Th>Action</Th><Th>Mục tiêu</Th><Th>IP</Th><Th>Mức</Th></tr>
+          </thead>
+          <tbody>
+            {filtered.map((l) => (
+              <tr key={l.id} className="border-t border-slate-100">
+                <Td className="text-slate-500 whitespace-nowrap">{l.at}</Td>
+                <Td>
+                  <div className="font-medium text-slate-800">{l.actor}</div>
+                  <div className="text-xs"><span className={`px-1.5 py-0.5 rounded ${roleColor[l.actorRole]}`}>{l.actorRole}</span></div>
+                </Td>
+                <Td><code className="px-1.5 py-0.5 rounded bg-slate-100 text-xs">{l.action}</code></Td>
+                <Td className="text-slate-700">{l.target}</Td>
+                <Td className="text-slate-500 font-mono text-xs">{l.ip}</Td>
+                <Td><span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${sevColor[l.severity]}`}>{l.severity}</span></Td>
+              </tr>
+            ))}
+            {filtered.length === 0 && <tr><Td className="text-slate-400 py-6 text-center" >Không có log phù hợp.</Td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function RateLimitSection() {
+  const [rules, setRules] = useState<RateLimitRule[]>(mockRateLimits);
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="p-4 border-b border-slate-100 flex items-start gap-3">
+        <div className="size-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center"><TrendingUp className="size-5" /></div>
+        <div className="flex-1">
+          <div className="font-semibold text-slate-800">Rate limiting</div>
+          <div className="text-xs text-slate-500">Giới hạn số request theo IP / user / global cho từng endpoint. Áp dụng ở edge.</div>
+        </div>
+        <button onClick={() => toast.success("Đã thêm rule mới (mock)")} className="px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 inline-flex items-center gap-1.5">
+          <Plus className="size-3.5" /> Thêm rule
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50">
+            <tr><Th>Endpoint</Th><Th>Giới hạn</Th><Th>Phạm vi</Th><Th>Hits 24h</Th><Th>Bị chặn 24h</Th><Th>Bật</Th></tr>
+          </thead>
+          <tbody>
+            {rules.map((r) => (
+              <tr key={r.id} className="border-t border-slate-100">
+                <Td><code className="px-1.5 py-0.5 rounded bg-slate-100 text-xs">{r.endpoint}</code></Td>
+                <Td className="text-slate-700">{r.limit} / {r.window}</Td>
+                <Td><span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{r.scope}</span></Td>
+                <Td className="text-slate-700">{r.hits24h.toLocaleString()}</Td>
+                <Td className={r.blocked24h > 0 ? "text-rose-600 font-semibold" : "text-slate-500"}>{r.blocked24h}</Td>
+                <Td>
+                  <button
+                    onClick={() => {
+                      setRules((p) => p.map((x) => x.id === r.id ? { ...x, enabled: !x.enabled } : x));
+                      toast.success(`Đã ${r.enabled ? "tắt" : "bật"} rule`);
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${r.enabled ? "bg-emerald-500" : "bg-slate-300"}`}
+                  >
+                    <span className={`inline-block size-4 transform rounded-full bg-white transition ${r.enabled ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CaptchaSection() {
+  const [cfg, setCfg] = useState(mockCaptcha);
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div className="flex items-start gap-3">
+          <div className="size-10 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center"><ShieldCheck className="size-5" /></div>
+          <div className="flex-1">
+            <div className="font-semibold text-slate-800">CAPTCHA bảo vệ form</div>
+            <div className="text-xs text-slate-500">Chống bot đăng ký, brute-force và spam form công khai.</div>
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3 mt-4">
+          <Field label="Provider">
+            <select
+              value={cfg.provider}
+              onChange={(e) => setCfg({ ...cfg, provider: e.target.value as CaptchaConfig["provider"] })}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            >
+              <option>Turnstile</option>
+              <option>hCaptcha</option>
+              <option>reCAPTCHA v3</option>
+            </select>
+          </Field>
+          <Field label={`Ngưỡng tin cậy (${cfg.threshold})`}>
+            <input type="range" min={0} max={1} step={0.05} value={cfg.threshold} onChange={(e) => setCfg({ ...cfg, threshold: Number(e.target.value) })} className="w-full" />
+          </Field>
+          <Field label="Kết quả 24h">
+            <div className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-slate-50">
+              <span className="font-bold text-slate-800">{cfg.challenges24h.toLocaleString()}</span>
+              <span className="text-slate-500"> challenges · </span>
+              <span className="text-emerald-600 font-semibold">{cfg.passRate}%</span>
+              <span className="text-slate-500"> pass</span>
+            </div>
+          </Field>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div className="font-semibold text-slate-800 mb-3">Áp dụng cho</div>
+        <div className="grid sm:grid-cols-2 gap-2">
+          {cfg.enabledOn.map((e) => (
+            <label key={e.id} className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+              <span className="text-sm font-medium text-slate-700">{e.label}</span>
+              <input
+                type="checkbox"
+                checked={e.on}
+                onChange={() => setCfg({ ...cfg, enabledOn: cfg.enabledOn.map((x) => x.id === e.id ? { ...x, on: !x.on } : x) })}
+                className="size-4 accent-indigo-600"
+              />
+            </label>
+          ))}
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button onClick={() => toast.success("Đã lưu cấu hình CAPTCHA")} className="px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700">Lưu cấu hình</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SessionSection() {
+  const [sessions, setSessions] = useState<AdminSession[]>(mockSessions);
+  function revoke(id: string) {
+    setSessions((p) => p.filter((s) => s.id !== id));
+    toast.success("Đã đăng xuất phiên");
+  }
+  function revokeAll(userId: string) {
+    setSessions((p) => p.filter((s) => s.userId !== userId || s.current));
+    toast.success(`Đã đăng xuất tất cả phiên khác của ${userName(userId)}`);
+  }
+  const grouped = useMemo(() => {
+    const map = new Map<string, AdminSession[]>();
+    sessions.forEach((s) => { const arr = map.get(s.userId) ?? []; arr.push(s); map.set(s.userId, arr); });
+    return Array.from(map.entries());
+  }, [sessions]);
+  return (
+    <div className="space-y-4">
+      {grouped.map(([uid, list]) => (
+        <div key={uid} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center"><Monitor className="size-5" /></div>
+            <div className="flex-1">
+              <div className="font-semibold text-slate-800">{userName(uid)}</div>
+              <div className="text-xs text-slate-500">{userEmail(uid)} · {list.length} phiên</div>
+            </div>
+            <button onClick={() => revokeAll(uid)} className="px-3 py-2 rounded-xl text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100">Đăng xuất phiên khác</button>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50">
+              <tr><Th>Thiết bị</Th><Th>IP</Th><Th>Vị trí</Th><Th>Bắt đầu</Th><Th>Hoạt động cuối</Th><Th className="text-right">Hành động</Th></tr>
+            </thead>
+            <tbody>
+              {list.map((s) => (
+                <tr key={s.id} className="border-t border-slate-100">
+                  <Td>
+                    <div className="font-medium text-slate-800">{s.device}</div>
+                    {s.current && <span className="text-xs text-emerald-600 font-semibold">● phiên hiện tại</span>}
+                  </Td>
+                  <Td className="font-mono text-xs text-slate-500">{s.ip}</Td>
+                  <Td className="text-slate-500">{s.location}</Td>
+                  <Td className="text-slate-500 whitespace-nowrap">{s.startedAt}</Td>
+                  <Td className="text-slate-500 whitespace-nowrap">{s.lastSeenAt}</Td>
+                  <Td className="text-right">
+                    <ActionButton tone="red" title="Đăng xuất" onClick={() => revoke(s.id)}><LogIn className="size-3.5 rotate-180" /></ActionButton>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DeviceSection() {
+  const [devices, setDevices] = useState<TrustedDevice[]>(mockDevices);
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="p-4 border-b border-slate-100 flex items-start gap-3">
+        <div className="size-10 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center"><Smartphone className="size-5" /></div>
+        <div className="flex-1">
+          <div className="font-semibold text-slate-800">Thiết bị tin cậy</div>
+          <div className="text-xs text-slate-500">Quản lý thiết bị đã được người dùng đánh dấu tin cậy (bỏ qua 2FA trong 30 ngày).</div>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50">
+            <tr><Th>Người dùng</Th><Th>Thiết bị</Th><Th>OS</Th><Th>Fingerprint</Th><Th>Tin cậy từ</Th><Th>Dùng gần nhất</Th><Th className="text-right">Hành động</Th></tr>
+          </thead>
+          <tbody>
+            {devices.map((d) => (
+              <tr key={d.id} className="border-t border-slate-100">
+                <Td>
+                  <div className="font-medium text-slate-800">{userName(d.userId)}</div>
+                  <div className="text-xs text-slate-500">{userEmail(d.userId)}</div>
+                </Td>
+                <Td className="text-slate-800">{d.name}</Td>
+                <Td className="text-slate-500">{d.os}</Td>
+                <Td className="font-mono text-xs text-slate-500">{d.fingerprint}</Td>
+                <Td className="text-slate-500">{d.trustedAt}</Td>
+                <Td className="text-slate-500">{d.lastUsedAt}</Td>
+                <Td className="text-right">
+                  <div className="inline-flex gap-1">
+                    <ActionButton
+                      tone={d.trusted ? "amber" : "green"}
+                      title={d.trusted ? "Bỏ tin cậy" : "Đánh dấu tin cậy"}
+                      onClick={() => {
+                        setDevices((p) => p.map((x) => x.id === d.id ? { ...x, trusted: !x.trusted } : x));
+                        toast.success(`Đã ${d.trusted ? "bỏ" : "đánh dấu"} tin cậy`);
+                      }}
+                    >
+                      <ShieldCheck className="size-3.5" />
+                    </ActionButton>
+                    <ActionButton tone="red" title="Gỡ thiết bị" onClick={() => { setDevices((p) => p.filter((x) => x.id !== d.id)); toast.success("Đã gỡ thiết bị"); }}>
+                      <Trash2 className="size-3.5" />
+                    </ActionButton>
+                  </div>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function IpBlocklistSection() {
+  const [list, setList] = useState<IpBlockEntry[]>(mockIpBlocklist);
+  const [ip, setIp] = useState("");
+  const [reason, setReason] = useState("");
+  const [perm, setPerm] = useState(false);
+  function add() {
+    if (!ip.trim()) { toast.error("Nhập IP"); return; }
+    setList((p) => [{
+      id: `ip${Date.now()}`, ip: ip.trim(), reason: reason || "Chặn thủ công",
+      addedBy: "an.nguyen@example.com", addedAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+      expiresAt: perm ? "permanent" : new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 16).replace("T", " "),
+      hits: 0,
+    }, ...p]);
+    setIp(""); setReason(""); setPerm(false);
+    toast.success("Đã thêm IP vào blacklist");
+  }
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="size-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center"><Ban className="size-5" /></div>
+          <div className="flex-1">
+            <div className="font-semibold text-slate-800">IP Blacklist</div>
+            <div className="text-xs text-slate-500">Chặn IP độc hại ở tầng edge — request từ IP này sẽ trả 403 ngay lập tức.</div>
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-[1fr_2fr_auto_auto] gap-2">
+          <Input value={ip} onChange={setIp} placeholder="IP / CIDR (vd: 45.117.80.91)" />
+          <Input value={reason} onChange={setReason} placeholder="Lý do" />
+          <label className="inline-flex items-center gap-2 px-3 rounded-xl border border-slate-200 text-sm">
+            <input type="checkbox" checked={perm} onChange={(e) => setPerm(e.target.checked)} className="size-4 accent-indigo-600" />
+            Vĩnh viễn
+          </label>
+          <button onClick={add} className="px-4 py-2 rounded-xl text-sm font-semibold bg-rose-600 text-white hover:bg-rose-700 inline-flex items-center gap-1.5">
+            <Plus className="size-4" /> Chặn
+          </button>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50">
+            <tr><Th>IP</Th><Th>Lý do</Th><Th>Thêm bởi</Th><Th>Lúc</Th><Th>Hết hạn</Th><Th>Hits</Th><Th className="text-right">Hành động</Th></tr>
+          </thead>
+          <tbody>
+            {list.map((e) => (
+              <tr key={e.id} className="border-t border-slate-100">
+                <Td className="font-mono text-sm text-slate-800">{e.ip}</Td>
+                <Td className="text-slate-700">{e.reason}</Td>
+                <Td className="text-slate-500">{e.addedBy}</Td>
+                <Td className="text-slate-500 whitespace-nowrap">{e.addedAt}</Td>
+                <Td>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${e.expiresAt === "permanent" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>
+                    {e.expiresAt === "permanent" ? "Vĩnh viễn" : e.expiresAt}
+                  </span>
+                </Td>
+                <Td className="text-slate-700 font-semibold">{e.hits}</Td>
+                <Td className="text-right">
+                  <ActionButton tone="green" title="Bỏ chặn" onClick={() => { setList((p) => p.filter((x) => x.id !== e.id)); toast.success("Đã bỏ chặn IP"); }}>
+                    <CheckCircle2 className="size-3.5" />
+                  </ActionButton>
+                </Td>
+              </tr>
+            ))}
+            {list.length === 0 && <tr><Td className="text-slate-400 py-6 text-center">Chưa có IP nào bị chặn.</Td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
