@@ -14,6 +14,7 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppVocabularyRouteImport } from './routes/_app.vocabulary'
 import { Route as AppStoreRouteImport } from './routes/_app.store'
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
+import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as AppVocabSetsIndexRouteImport } from './routes/_app.vocab-sets.index'
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
 import { Route as AppVocabSetsSetIdRouteImport } from './routes/_app.vocab-sets.$setId'
@@ -43,6 +44,11 @@ const AppLeaderboardRoute = AppLeaderboardRouteImport.update({
   path: '/leaderboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppVocabSetsIndexRoute = AppVocabSetsIndexRouteImport.update({
   id: '/vocab-sets/',
   path: '/vocab-sets/',
@@ -66,6 +72,7 @@ const AppGamesFlashcardRoute = AppGamesFlashcardRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/admin': typeof AppAdminRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
   '/vocabulary': typeof AppVocabularyRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/vocab-sets/': typeof AppVocabSetsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/admin': typeof AppAdminRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
   '/vocabulary': typeof AppVocabularyRoute
@@ -87,6 +95,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/_app/admin': typeof AppAdminRoute
   '/_app/leaderboard': typeof AppLeaderboardRoute
   '/_app/store': typeof AppStoreRoute
   '/_app/vocabulary': typeof AppVocabularyRoute
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/leaderboard'
     | '/store'
     | '/vocabulary'
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/vocab-sets/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/admin'
     | '/leaderboard'
     | '/store'
     | '/vocabulary'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/_app/admin'
     | '/_app/leaderboard'
     | '/_app/store'
     | '/_app/vocabulary'
@@ -171,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLeaderboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin': {
+      id: '/_app/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/vocab-sets/': {
       id: '/_app/vocab-sets/'
       path: '/vocab-sets'
@@ -203,6 +222,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAdminRoute: typeof AppAdminRoute
   AppLeaderboardRoute: typeof AppLeaderboardRoute
   AppStoreRoute: typeof AppStoreRoute
   AppVocabularyRoute: typeof AppVocabularyRoute
@@ -214,6 +234,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAdminRoute: AppAdminRoute,
   AppLeaderboardRoute: AppLeaderboardRoute,
   AppStoreRoute: AppStoreRoute,
   AppVocabularyRoute: AppVocabularyRoute,

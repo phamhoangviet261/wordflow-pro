@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, BookMarked, BookOpen, Gamepad2, Store, Trophy, GraduationCap } from "lucide-react";
+import { Home, BookMarked, BookOpen, Gamepad2, Store, Trophy, GraduationCap, Shield } from "lucide-react";
 
 const items = [
   { to: "/", label: "Trang chủ", icon: Home },
@@ -8,6 +8,7 @@ const items = [
   { to: "/games", label: "Game phản xạ", icon: Gamepad2 },
   { to: "/store", label: "Cửa hàng", icon: Store },
   { to: "/leaderboard", label: "Xếp hạng", icon: Trophy },
+  { to: "/admin", label: "Quản trị", icon: Shield },
 ] as const;
 
 export function AppSidebar() {
