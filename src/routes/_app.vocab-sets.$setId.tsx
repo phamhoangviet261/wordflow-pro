@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, ListChecks, Play, Volume2, Sparkles, Trash2 } from "lucide-react";
+import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
+import { ArrowLeft, ListChecks, Play, Volume2, Sparkles, Trash2, SearchX, Home, RotateCcw } from "lucide-react";
 import { words as allWords } from "@/lib/mock-data";
 import { useVocabSets, deleteVocabSet } from "@/lib/sets-store";
 import { toast } from "sonner";
@@ -12,12 +12,24 @@ export const Route = createFileRoute("/_app/vocab-sets/$setId")({
     ],
   }),
   component: SetDetailPage,
-  notFoundComponent: () => (
-    <div className="max-w-3xl mx-auto py-12 text-center">
-      <h2 className="text-xl font-bold">Không tìm thấy bộ từ</h2>
-      <Link to="/vocab-sets" className="text-blue-600 hover:underline">Quay lại</Link>
-    </div>
-  ),
+  errorComponent: ({ error, reset }) => {
+    const router = useRouter();
+    return (
+      <SetNotFound
+        title="Có lỗi khi tải bộ từ"
+        description={error.message || "Đã xảy ra sự cố không mong muốn."}
+        onRetry={() => { router.invalidate(); reset(); }}
+      />
+    );
+  },
+  notFoundComponent: () => {
+    const { setId } = Route.useParams();
+    return (
+      <SetNotFound
+        description={`Bộ từ vựng với mã "${setId}" không tồn tại hoặc đã bị xoá.`}
+      />
+    );
+  },
 });
 
 const typeColors: Record<string, string> = {
@@ -42,14 +54,7 @@ function SetDetailPage() {
   };
 
   if (!set) {
-    return (
-      <div className="max-w-3xl mx-auto py-12 text-center space-y-3">
-        <h2 className="text-xl font-bold text-slate-800">Bộ từ không tồn tại</h2>
-        <Link to="/vocab-sets" className="inline-flex items-center gap-2 text-blue-600 hover:underline">
-          <ArrowLeft className="size-4" /> Về danh sách
-        </Link>
-      </div>
-    );
+    throw notFound();
   }
 
   const setWords = set.wordIds.map((id) => allWords.find((w) => w.id === id)).filter(Boolean) as typeof allWords;
