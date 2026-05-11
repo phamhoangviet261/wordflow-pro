@@ -39,6 +39,48 @@ const typeColors: Record<string, string> = {
   ADV: "bg-teal-100 text-teal-600",
 };
 
+function SetNotFound({
+  title = "Không tìm thấy bộ từ vựng",
+  description = "Đường dẫn này có thể đã bị thay đổi, hoặc bộ từ đã bị xoá.",
+  onRetry,
+}: {
+  title?: string;
+  description?: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="max-w-xl mx-auto py-16 px-4 text-center">
+      <div className="mx-auto size-20 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mb-6">
+        <SearchX className="size-10 text-blue-600" />
+      </div>
+      <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">{title}</h1>
+      <p className="mt-3 text-slate-500">{description}</p>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Link
+          to="/vocab-sets"
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-2xl shadow-md transition"
+        >
+          <ArrowLeft className="size-4" /> Về danh sách bộ từ
+        </Link>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm px-5 py-2.5 rounded-2xl border border-slate-200 transition"
+        >
+          <Home className="size-4" /> Trang chủ
+        </Link>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm px-5 py-2.5 rounded-2xl border border-slate-200 transition"
+          >
+            <RotateCcw className="size-4" /> Thử lại
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SetDetailPage() {
   const { setId } = Route.useParams();
   const router = useRouter();
