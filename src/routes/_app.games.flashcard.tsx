@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, X, RotateCcw, Volume2, Trophy } from "lucide-react";
 import { words as allWords, type Word } from "@/lib/mock-data";
+import { awardXp, awardCoins, bumpStreak, questProgress } from "@/lib/gamification-store";
+import { SessionCompleteModal, type SessionResult } from "@/components/gamification/SessionCompleteModal";
 
 export const Route = createFileRoute("/_app/games/flashcard")({
   head: () => ({
@@ -28,6 +30,7 @@ function FlashcardGame() {
   const [flipped, setFlipped] = useState(false);
   // results: undefined | true (known) | false (unknown)
   const [results, setResults] = useState<(boolean | undefined)[]>(() => deck.map(() => undefined));
+  const [sessionResult, setSessionResult] = useState<SessionResult | null>(null);
 
   const total = deck.length;
   const current = deck[index];
@@ -47,6 +50,11 @@ function FlashcardGame() {
       copy[index] = known;
       return copy;
     });
+    if (known) {
+      awardXp(5);
+      questProgress("q1", 1);
+      questProgress("q2", 1);
+    }
     if (index < total - 1) {
       setTimeout(() => go(index + 1), 250);
     } else {
@@ -58,7 +66,25 @@ function FlashcardGame() {
     setIndex(0);
     setFlipped(false);
     setResults(deck.map(() => undefined));
+    setSessionResult(null);
   };
+
+  useEffect(() => {
+    if (!finished || sessionResult) return;
+    const bonusXp = 20 + correct * 2;
+    const bonusCoins = 10 + correct * 3;
+    awardXp(bonusXp);
+    awardCoins(bonusCoins);
+    bumpStreak();
+    questProgress("q4", 1);
+    setSessionResult({
+      xpEarned: correct * 5 + bonusXp,
+      coinsEarned: bonusCoins,
+      correct,
+      total,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 py-2">
@@ -213,6 +239,12 @@ function FlashcardGame() {
           </button>
         </div>
       )}
+
+      <SessionCompleteModal
+        result={sessionResult}
+        onClose={() => setSessionResult(null)}
+        onAgain={reset}
+      />
     </div>
   );
 }
