@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppVocabularyRouteImport } from './routes/_app.vocabulary'
@@ -20,6 +21,11 @@ import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
 import { Route as AppVocabSetsSetIdRouteImport } from './routes/_app.vocab-sets.$setId'
 import { Route as AppGamesFlashcardRouteImport } from './routes/_app.games.flashcard'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -72,6 +78,7 @@ const AppGamesFlashcardRoute = AppGamesFlashcardRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/login': typeof LoginRoute
   '/admin': typeof AppAdminRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/vocab-sets/': typeof AppVocabSetsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/login': typeof LoginRoute
   '/admin': typeof AppAdminRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
@@ -95,6 +103,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
   '/_app/admin': typeof AppAdminRoute
   '/_app/leaderboard': typeof AppLeaderboardRoute
   '/_app/store': typeof AppStoreRoute
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
     | '/admin'
     | '/leaderboard'
     | '/store'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/vocab-sets/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/login'
     | '/admin'
     | '/leaderboard'
     | '/store'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/login'
     | '/_app/admin'
     | '/_app/leaderboard'
     | '/_app/store'
@@ -144,10 +156,18 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -249,6 +269,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
