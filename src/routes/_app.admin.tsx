@@ -1246,42 +1246,85 @@ function SetsPanel() {
   const sets = useVocabSets();
   const [editing, setEditing] = useState<VocabSet | null>(null);
   const [creating, setCreating] = useState(false);
+  const [historyOf, setHistoryOf] = useState<VocabSet | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
+  const [diffFilter, setDiffFilter] = useState<"all" | 1 | 2 | 3 | 4 | 5>("all");
+  const [tagFilter, setTagFilter] = useState<string>("all");
+
+  const tags = getAllSetTags();
+  const filtered = sets.filter((s) => {
+    if (statusFilter !== "all" && (s.status ?? "published") !== statusFilter) return false;
+    if (diffFilter !== "all" && (s.difficulty ?? 0) !== diffFilter) return false;
+    if (tagFilter !== "all" && !(s.tags ?? []).includes(tagFilter)) return false;
+    return true;
+  });
 
   const handleDelete = (id: string, title: string) => { deleteVocabSet(id); toast.success(`Đã xoá "${title}"`); };
+  const togglePublish = (s: VocabSet) => {
+    const next = (s.status ?? "published") === "published" ? "draft" : "published";
+    updateVocabSet(s.id, { status: next });
+    toast.success(next === "published" ? "Đã xuất bản bộ từ." : "Đã chuyển về Draft.");
+  };
+  const handleUndo = () => { if (undoSets()) toast.success("Đã hoàn tác."); else toast.error("Không có gì để hoàn tác."); };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
-        <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-700 transition">
-          <Plus className="size-4" /> Thêm bộ từ
-        </button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <FilterSelect value={statusFilter} onChange={(v) => setStatusFilter(v as any)}
+          options={[["all","Tất cả trạng thái"],["published","Published"],["draft","Draft"]]} />
+        <FilterSelect value={String(diffFilter)} onChange={(v) => setDiffFilter(v === "all" ? "all" : (Number(v) as 1|2|3|4|5))}
+          options={[["all","Mọi độ khó"],["1","★ 1"],["2","★ 2"],["3","★ 3"],["4","★ 4"],["5","★ 5"]]} />
+        <FilterSelect value={tagFilter} onChange={setTagFilter}
+          options={[["all","Mọi tag"], ...tags.map((t) => [t, `#${t}`] as [string, string])]} />
+        <div className="ml-auto flex items-center gap-2">
+          <button onClick={handleUndo} disabled={!canUndoSets()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition">
+            <Undo2 className="size-3.5" /> Hoàn tác
+          </button>
+          <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-sm hover:bg-indigo-700 transition">
+            <Plus className="size-4" /> Thêm bộ từ
+          </button>
+        </div>
       </div>
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
-            <tr><Th>Bộ từ</Th><Th>Mô tả</Th><Th>Số từ</Th><Th>Đã học</Th><Th className="text-right">Hành động</Th></tr>
+            <tr><Th>Bộ từ</Th><Th>Trạng thái</Th><Th>Độ khó</Th><Th>Tags</Th><Th>Số từ</Th><Th className="text-right">Hành động</Th></tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sets.map((s) => (
+            {filtered.map((s) => (
               <tr key={s.id} className="hover:bg-slate-50/60">
                 <Td>
                   <div className="flex items-center gap-3">
                     <div className={`size-8 rounded-xl bg-gradient-to-r ${s.color}`} />
-                    <span className="font-semibold text-slate-800">{s.title}</span>
+                    <div>
+                      <div className="font-semibold text-slate-800">{s.title}</div>
+                      <div className="text-[11px] text-slate-400 truncate max-w-xs">{s.description}</div>
+                    </div>
                   </div>
                 </Td>
-                <Td className="text-slate-500 text-xs max-w-md truncate">{s.description}</Td>
-                <Td className="font-semibold">{s.total}</Td>
+                <Td><StatusBadge status={s.status ?? "published"} /></Td>
+                <Td><DifficultyDots level={s.difficulty ?? 0} /></Td>
+                <Td>
+                  <div className="flex flex-wrap gap-1">
+                    {(s.tags ?? []).map((t) => (
+                      <span key={t} className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">#{t}</span>
+                    ))}
+                  </div>
+                </Td>
                 <Td className="text-slate-600">{s.learned}/{s.total}</Td>
                 <Td className="text-right">
                   <div className="inline-flex gap-1.5">
+                    <ActionButton onClick={() => togglePublish(s)} title={(s.status ?? "published") === "published" ? "Chuyển Draft" : "Publish"} tone={(s.status ?? "published") === "published" ? "amber" : "green"}>
+                      <Send className="size-3.5" />
+                    </ActionButton>
+                    <ActionButton onClick={() => setHistoryOf(s)} title="Lịch sử" tone="slate"><History className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => setEditing(s)} title="Sửa" tone="slate"><Pencil className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => handleDelete(s.id, s.title)} title="Xoá" tone="red"><Trash2 className="size-3.5" /></ActionButton>
                   </div>
                 </Td>
               </tr>
             ))}
-            {sets.length === 0 && (<tr><td colSpan={5} className="p-8 text-center text-sm text-slate-500">Chưa có bộ từ nào.</td></tr>)}
+            {filtered.length === 0 && (<tr><td colSpan={6} className="p-8 text-center text-sm text-slate-500">Chưa có bộ từ phù hợp.</td></tr>)}
           </tbody>
         </table>
       </div>
@@ -1297,6 +1340,19 @@ function SetsPanel() {
           }}
         />
       )}
+
+      {historyOf && (
+        <VersionHistoryModal
+          title={`Lịch sử: ${historyOf.title}`}
+          versions={getSetHistory(historyOf.id).map((h) => ({
+            at: h.at,
+            summary: `${h.snapshot.title} — ${h.snapshot.wordIds.length} từ`,
+            badge: h.snapshot.status ?? "published",
+          }))}
+          onRestore={(i) => { restoreSetVersion(historyOf.id, i); toast.success("Đã khôi phục phiên bản."); setHistoryOf(null); }}
+          onClose={() => setHistoryOf(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1305,7 +1361,7 @@ function SetEditor({
   initial, onSave, onClose,
 }: {
   initial: VocabSet | null;
-  onSave: (data: { title: string; description: string; color: string; wordIds: string[] }) => void;
+  onSave: (data: { title: string; description: string; color: string; wordIds: string[]; status: "draft" | "published"; difficulty: 1|2|3|4|5; tags: string[] }) => void;
   onClose: () => void;
 }) {
   const allWords = useWords();
@@ -1314,6 +1370,11 @@ function SetEditor({
   const [color, setColor] = useState(initial?.color ?? gradientPresets[0]);
   const [wordIds, setWordIds] = useState<string[]>(initial?.wordIds ?? []);
   const [wordQ, setWordQ] = useState("");
+  const [status, setStatus] = useState<"draft" | "published">(initial?.status ?? "draft");
+  const [difficulty, setDifficulty] = useState<1 | 2 | 3 | 4 | 5>((initial?.difficulty ?? 3) as 1|2|3|4|5);
+  const [tagsInput, setTagsInput] = useState((initial?.tags ?? []).join(", "));
+
+  const dup = findDuplicateSet(title, initial?.id);
 
   useEffect(() => {
     // Drop selected ids that no longer exist
@@ -1329,14 +1390,23 @@ function SetEditor({
 
   const submit = () => {
     if (!title.trim()) { toast.error("Vui lòng nhập tên bộ từ."); return; }
-    onSave({ title: title.trim(), description: description.trim(), color, wordIds });
+    if (dup) { toast.error(`Bộ từ "${dup.title}" đã tồn tại.`); return; }
+    const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
+    onSave({ title: title.trim(), description: description.trim(), color, wordIds, status, difficulty, tags });
   };
 
   return (
     <Modal title={initial ? "Chỉnh sửa bộ từ" : "Thêm bộ từ mới"} onClose={onClose} wide>
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Tên bộ từ"><Input value={title} onChange={setTitle} placeholder="Business English" /></Field>
+          <Field label="Tên bộ từ">
+            <Input value={title} onChange={setTitle} placeholder="Business English" />
+            {dup && (
+              <div className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 inline-flex items-center gap-1.5">
+                <AlertCircle className="size-3.5" /> Trùng với bộ "{dup.title}".
+              </div>
+            )}
+          </Field>
           <Field label="Màu nền">
             <div className="flex gap-2 flex-wrap">
               {gradientPresets.map((g) => (
@@ -1344,6 +1414,25 @@ function SetEditor({
                   className={`size-8 rounded-xl bg-gradient-to-r ${g} ring-2 transition ${color === g ? "ring-indigo-500 scale-110" : "ring-transparent"}`} />
               ))}
             </div>
+          </Field>
+          <Field label="Trạng thái">
+            <div className="flex gap-1.5">
+              {(["draft","published"] as const).map((s) => (
+                <button key={s} type="button" onClick={() => setStatus(s)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition ${status === s ? (s === "published" ? "bg-green-600 text-white" : "bg-amber-500 text-white") : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{s}</button>
+              ))}
+            </div>
+          </Field>
+          <Field label="Độ khó">
+            <div className="flex gap-1.5">
+              {[1,2,3,4,5].map((n) => (
+                <button key={n} type="button" onClick={() => setDifficulty(n as 1|2|3|4|5)}
+                  className={`size-8 rounded-lg text-xs font-bold transition ${difficulty === n ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{n}</button>
+              ))}
+            </div>
+          </Field>
+          <Field label="Tags (phân tách bằng dấu phẩy)" className="md:col-span-2">
+            <Input value={tagsInput} onChange={setTagsInput} placeholder="beginner, ielts, business" />
           </Field>
           <Field label="Mô tả" className="md:col-span-2">
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Mô tả ngắn gọn về bộ từ..."
