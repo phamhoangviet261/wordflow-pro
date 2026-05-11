@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, Sparkles, Plus, Volume2 } from "lucide-react";
+import {
+  Search, Sparkles, Plus, Volume2, Trash2, ArrowUp, ArrowDown, ArrowUpDown,
+  ChevronLeft, ChevronRight, AlertOctagon,
+} from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
@@ -45,6 +48,17 @@ function VocabularyPage() {
   const [open, setOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiText, setAiText] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"ALL" | Word["type"]>("ALL");
+  const [statusFilter, setStatusFilter] = useState<"all" | "learned" | "not">("all");
+  const [sortKey, setSortKey] = useState<"word" | "type" | "meaning" | "learned">("word");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [confirmState, setConfirmState] = useState<null | {
+    title: string; description?: string; onConfirm: () => void;
+  }>(null);
+  const askConfirm = (opts: { title: string; description?: string; onConfirm: () => void }) =>
+    setConfirmState(opts);
   const emptyForm = { word: "", phonetic: "", meaning: "", type: "NOUN" as Word["type"], example: "" };
   const [form, setForm] = useState(emptyForm);
 
@@ -107,7 +121,7 @@ function VocabularyPage() {
 
   const learned = items.filter((w) => w.learned).length;
   const total = items.length;
-  const pct = Math.round((learned / total) * 100);
+  const pct = total ? Math.round((learned / total) * 100) : 0;
 
   const stats = [
     { label: "Tổng từ", value: total, accent: "bg-blue-100 text-blue-600" },
@@ -116,10 +130,62 @@ function VocabularyPage() {
     { label: "Tỉ lệ", value: `${pct}%`, accent: "bg-purple-100 text-purple-600" },
   ];
 
-  const filtered = useMemo(
-    () => items.filter((w) => w.word.toLowerCase().includes(q.toLowerCase()) || w.meaning.toLowerCase().includes(q.toLowerCase())),
-    [items, q]
-  );
+  const filtered = useMemo(() => {
+    const ql = q.trim().toLowerCase();
+    return items.filter((w) => {
+      if (ql && !w.word.toLowerCase().includes(ql) && !w.meaning.toLowerCase().includes(ql)) return false;
+      if (typeFilter !== "ALL" && w.type !== typeFilter) return false;
+      if (statusFilter === "learned" && !w.learned) return false;
+      if (statusFilter === "not" && w.learned) return false;
+      return true;
+    });
+  }, [items, q, typeFilter, statusFilter]);
+
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      let av: string | number = "", bv: string | number = "";
+      if (sortKey === "learned") { av = a.learned ? 1 : 0; bv = b.learned ? 1 : 0; }
+      else { av = (a[sortKey] as string).toLowerCase(); bv = (b[sortKey] as string).toLowerCase(); }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paged = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const onSort = (k: typeof sortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+    setPage(1);
+  };
+
+  const handleDelete = (w: Word) => {
+    askConfirm({
+      title: `Xoá từ "${w.word}"?`,
+      description: "Hành động này không thể hoàn tác.",
+      onConfirm: () => {
+        setItems((prev) => prev.filter((p) => p.id !== w.id));
+        toast.success(`Đã xoá "${w.word}"`);
+      },
+    });
+  };
+
+  const toggleLearned = (w: Word, v: boolean) => {
+    if (w.learned && !v) {
+      askConfirm({
+        title: `Đánh dấu "${w.word}" là chưa học?`,
+        description: "Tiến độ của từ này sẽ được đặt lại.",
+        onConfirm: () => setItems((prev) => prev.map((p) => (p.id === w.id ? { ...p, learned: v } : p))),
+      });
+    } else {
+      setItems((prev) => prev.map((p) => (p.id === w.id ? { ...p, learned: v } : p)));
+    }
+  };
 
   const speak = (text: string) => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -147,14 +213,34 @@ function VocabularyPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Tìm từ vựng..."
-            className="w-full bg-white border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
-          />
+        <div className="flex flex-col sm:flex-row gap-2 flex-1">
+          <div className="relative flex-1 max-w-md">
+            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={q}
+              onChange={(e) => { setQ(e.target.value); setPage(1); }}
+              placeholder="Tìm từ vựng..."
+              className="w-full bg-white border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+            />
+          </div>
+          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as typeof typeFilter); setPage(1); }}>
+            <SelectTrigger className="w-[140px] rounded-2xl bg-white"><SelectValue placeholder="Loại từ" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Tất cả loại</SelectItem>
+              <SelectItem value="NOUN">NOUN</SelectItem>
+              <SelectItem value="VERB">VERB</SelectItem>
+              <SelectItem value="ADJ">ADJ</SelectItem>
+              <SelectItem value="ADV">ADV</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as typeof statusFilter); setPage(1); }}>
+            <SelectTrigger className="w-[150px] rounded-2xl bg-white"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="learned">Đã học</SelectItem>
+              <SelectItem value="not">Chưa học</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex gap-2">
           <Dialog open={aiOpen} onOpenChange={setAiOpen}>
@@ -263,36 +349,163 @@ function VocabularyPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100 overflow-hidden">
-        {filtered.map((w) => (
-          <div key={w.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50/60 transition">
-            <button
-              onClick={() => speak(w.word)}
-              className="size-10 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center shrink-0"
-              aria-label={`Nghe phát âm ${w.word}`}
-            >
-              <Volume2 className="size-4" />
-            </button>
-            <div className="w-40 shrink-0">
-              <div className="font-bold text-slate-800">{w.word}</div>
-              <div className="text-xs text-slate-400">{w.phonetic}</div>
-            </div>
-            <div className="w-44 shrink-0 hidden md:block text-sm text-slate-600">{w.meaning}</div>
-            <div className="w-16 shrink-0 hidden md:block">
-              <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${typeColors[w.type]}`}>{w.type}</span>
-            </div>
-            <div className="flex-1 hidden lg:block text-sm text-slate-500 italic truncate">"{w.example}"</div>
-            <Switch
-              checked={w.learned}
-              onCheckedChange={(v) => setItems((prev) => prev.map((p) => (p.id === w.id ? { ...p, learned: v } : p)))}
-              className="data-[state=checked]:bg-green-500"
-            />
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wide">
+              <tr>
+                <th className="px-4 py-3 w-12"></th>
+                <SortHeader k="word" sortKey={sortKey} sortDir={sortDir} onSort={onSort}>Từ</SortHeader>
+                <SortHeader k="meaning" sortKey={sortKey} sortDir={sortDir} onSort={onSort} className="hidden md:table-cell">Nghĩa</SortHeader>
+                <SortHeader k="type" sortKey={sortKey} sortDir={sortDir} onSort={onSort} className="hidden md:table-cell">Loại</SortHeader>
+                <th className="px-4 py-3 text-left font-semibold hidden lg:table-cell">Ví dụ</th>
+                <SortHeader k="learned" sortKey={sortKey} sortDir={sortDir} onSort={onSort} align="center">Đã học</SortHeader>
+                <th className="px-4 py-3 text-right font-semibold w-20"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {paged.map((w) => (
+                <tr key={w.id} className="hover:bg-slate-50/70 transition group">
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => speak(w.word)}
+                      className="size-9 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center"
+                      aria-label={`Nghe phát âm ${w.word}`}
+                    >
+                      <Volume2 className="size-4" />
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="font-bold text-slate-800">{w.word}</div>
+                    <div className="text-xs text-slate-400">{w.phonetic}</div>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600 hidden md:table-cell">{w.meaning}</td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${typeColors[w.type]}`}>{w.type}</span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 italic hidden lg:table-cell max-w-xs truncate">"{w.example}"</td>
+                  <td className="px-4 py-3 text-center">
+                    <Switch
+                      checked={w.learned}
+                      onCheckedChange={(v) => toggleLearned(w, v)}
+                      className="data-[state=checked]:bg-green-500"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => handleDelete(w)}
+                      className="size-9 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600 inline-flex items-center justify-center transition opacity-0 group-hover:opacity-100"
+                      aria-label={`Xoá ${w.word}`}
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {paged.length === 0 && (
+                <tr><td colSpan={7} className="p-8 text-center text-sm text-slate-500">Không tìm thấy từ nào.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 bg-slate-50/40 text-sm">
+          <div className="flex items-center gap-2 text-slate-500">
+            <span>Hiển thị</span>
+            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+              <SelectTrigger className="h-8 w-[70px] rounded-lg bg-white"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[5, 10, 20, 50].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <span>/ {sorted.length} từ</span>
           </div>
-        ))}
-        {filtered.length === 0 && (
-          <div className="p-8 text-center text-sm text-slate-500">Không tìm thấy từ nào.</div>
-        )}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage <= 1}
+              className="size-8 rounded-lg hover:bg-white border border-slate-200 inline-flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <span className="px-3 text-slate-600">Trang {safePage} / {totalPages}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage >= totalPages}
+              className="size-8 rounded-lg hover:bg-white border border-slate-200 inline-flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        </div>
       </div>
+
+      {confirmState && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setConfirmState(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="p-6 flex gap-4">
+              <div className="size-11 shrink-0 rounded-2xl flex items-center justify-center bg-red-100 text-red-600">
+                <AlertOctagon className="size-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-slate-800">{confirmState.title}</h3>
+                {confirmState.description && (
+                  <p className="text-sm text-slate-500 mt-1">{confirmState.description}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60">
+              <button
+                onClick={() => setConfirmState(null)}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={() => { confirmState.onConfirm(); setConfirmState(null); }}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 shadow-sm transition"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+type SortKey = "word" | "type" | "meaning" | "learned";
+
+function SortHeader({
+  children, k, sortKey, sortDir, onSort, className = "", align = "left",
+}: {
+  children: React.ReactNode;
+  k: SortKey;
+  sortKey: SortKey;
+  sortDir: "asc" | "desc";
+  onSort: (k: SortKey) => void;
+  className?: string;
+  align?: "left" | "center" | "right";
+}) {
+  const active = sortKey === k;
+  const alignCls = align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left";
+  return (
+    <th className={`px-4 py-3 font-semibold ${alignCls} ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSort(k)}
+        className={`inline-flex items-center gap-1 transition ${active ? "text-emerald-700" : "text-slate-500 hover:text-slate-700"}`}
+      >
+        <span>{children}</span>
+        {active ? (sortDir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />) : <ArrowUpDown className="size-3 opacity-40" />}
+      </button>
+    </th>
   );
 }
