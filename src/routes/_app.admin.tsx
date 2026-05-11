@@ -4,7 +4,7 @@ import {
   Shield, Users, CreditCard, BookOpen, BookMarked, Search, Trash2, Ban,
   CheckCircle2, Crown, Plus, Pencil, X, Eye, LogIn, Mail, Download, ShieldCheck,
   Activity, Monitor, Clock, AlertTriangle, Receipt, Tag, RotateCcw, TrendingUp, Webhook,
-  RefreshCw, Copy,
+  RefreshCw, Copy, History, Upload, Sparkles, Undo2, Send, AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -14,8 +14,16 @@ import {
   type PaymentRecord, type Coupon, type WebhookLog,
 } from "@/lib/admin-mock";
 import type { Word, VocabSet } from "@/lib/mock-data";
-import { useVocabSets, addVocabSet, updateVocabSet, deleteVocabSet } from "@/lib/sets-store";
-import { useWords, addWord, updateWord, deleteWord } from "@/lib/words-store";
+import {
+  useVocabSets, addVocabSet, updateVocabSet, deleteVocabSet,
+  getSetHistory, restoreSetVersion, canUndoSets, undoSets,
+  findDuplicateSet, getAllSetTags,
+} from "@/lib/sets-store";
+import {
+  useWords, addWord, updateWord, deleteWord,
+  getWordHistory, restoreWordVersion, canUndoWords, undoWords,
+  findDuplicateWord, getAllTags, bulkAddWords,
+} from "@/lib/words-store";
 
 export const Route = createFileRoute("/_app/admin")({
   head: () => ({
