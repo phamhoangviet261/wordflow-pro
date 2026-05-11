@@ -55,6 +55,7 @@ function AdminPage() {
   const [tab, setTab] = useState<Tab>("users");
 
   return (
+    <ConfirmProvider>
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center gap-3">
         <div className="size-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-md">
@@ -92,6 +93,7 @@ function AdminPage() {
       {tab === "sets" && <SetsPanel />}
       {tab === "security" && <SecurityPanel />}
     </div>
+    </ConfirmProvider>
   );
 }
 
