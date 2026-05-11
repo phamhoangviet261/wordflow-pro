@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, createContext, useContext, useCallback } from "react";
 import {
   Shield, Users, CreditCard, BookOpen, BookMarked, Search, Trash2, Ban,
   CheckCircle2, Crown, Plus, Pencil, X, Eye, LogIn, Mail, Download, ShieldCheck,
   Activity, Monitor, Clock, AlertTriangle, Receipt, Tag, RotateCcw, TrendingUp, Webhook,
   RefreshCw, Copy, History, Upload, Sparkles, Undo2, Send, AlertCircle,
   Lock, KeyRound, Smartphone, Globe, Power,
+  ArrowUp, ArrowDown, ArrowUpDown, AlertOctagon, Flame, BookOpen as BookOpenIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -54,6 +55,7 @@ function AdminPage() {
   const [tab, setTab] = useState<Tab>("users");
 
   return (
+    <ConfirmProvider>
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center gap-3">
         <div className="size-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-md">
@@ -91,6 +93,7 @@ function AdminPage() {
       {tab === "sets" && <SetsPanel />}
       {tab === "security" && <SecurityPanel />}
     </div>
+    </ConfirmProvider>
   );
 }
 
@@ -135,37 +138,89 @@ function UsersPanel() {
   const [items, setItems] = useState<AdminUser[]>(mockUsers);
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState<AdminRole | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended">("all");
+  const [planFilter, setPlanFilter] = useState<"all" | "Free" | "Pro" | "Pro+">("all");
+  const [sortKey, setSortKey] = useState<"name" | "role" | "plan" | "status" | "lastActiveAt" | "lessonsCompleted">("lastActiveAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detail, setDetail] = useState<AdminUser | null>(null);
   const [notifyTarget, setNotifyTarget] = useState<AdminUser[] | null>(null);
+  const confirm = useConfirm();
+
+  const onSort = (k: typeof sortKey) => {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+  };
 
   const filtered = useMemo(
     () => items.filter((u) => {
       const matchQ = u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase());
       const matchRole = roleFilter === "all" || u.role === roleFilter;
-      return matchQ && matchRole;
+      const matchStatus = statusFilter === "all" || u.status === statusFilter;
+      const matchPlan = planFilter === "all" || u.plan === planFilter;
+      return matchQ && matchRole && matchStatus && matchPlan;
     }),
-    [items, q, roleFilter],
+    [items, q, roleFilter, statusFilter, planFilter],
   );
 
-  const toggleStatus = (id: string) => {
-    setItems((prev) => prev.map((u) => (u.id === id ? { ...u, status: u.status === "active" ? "suspended" : "active" } : u)));
-    toast.success("Đã cập nhật trạng thái người dùng.");
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    arr.sort((a, b) => {
+      const av = a[sortKey] as string | number;
+      const bv = b[sortKey] as string | number;
+      if (av === bv) return 0;
+      const cmp = av > bv ? 1 : -1;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+  }, [filtered, sortKey, sortDir]);
+
+  const toggleStatus = async (u: AdminUser) => {
+    const suspending = u.status === "active";
+    if (suspending) {
+      const ok = await confirm({
+        title: `Khoá tài khoản ${u.name}?`,
+        description: "Người dùng sẽ không thể đăng nhập cho đến khi bạn mở khoá lại.",
+        tone: "warn", confirmLabel: "Khoá tài khoản",
+      });
+      if (!ok) return;
+    }
+    setItems((prev) => prev.map((x) => (x.id === u.id ? { ...x, status: suspending ? "suspended" : "active" } : x)));
+    toast.success(suspending ? "Đã khoá người dùng." : "Đã mở khoá người dùng.");
   };
-  const upgrade = (id: string) => {
-    setItems((prev) => prev.map((u) => (u.id === id ? { ...u, plan: u.plan === "Free" ? "Pro" : "Pro+" } : u)));
+  const upgrade = async (u: AdminUser) => {
+    const next = u.plan === "Free" ? "Pro" : "Pro+";
+    const ok = await confirm({
+      title: `Nâng gói cho ${u.name}?`,
+      description: `Sẽ nâng từ ${u.plan} lên ${next}. Hành động này có thể ảnh hưởng đến billing.`,
+      tone: "default", confirmLabel: "Nâng gói",
+    });
+    if (!ok) return;
+    setItems((prev) => prev.map((x) => (x.id === u.id ? { ...x, plan: next } : x)));
     toast.success("Đã nâng gói cho người dùng.");
   };
-  const remove = (id: string) => {
-    setItems((prev) => prev.filter((u) => u.id !== id));
-    setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
+  const remove = async (u: AdminUser) => {
+    const ok = await confirm({
+      title: `Xoá người dùng ${u.name}?`,
+      description: "Hành động này không thể hoàn tác. Tất cả dữ liệu của người dùng sẽ bị xoá.",
+      tone: "danger", confirmLabel: "Xoá vĩnh viễn",
+    });
+    if (!ok) return;
+    setItems((prev) => prev.filter((x) => x.id !== u.id));
+    setSelected((prev) => { const n = new Set(prev); n.delete(u.id); return n; });
     toast.success("Đã xoá người dùng.");
   };
   const setRole = (id: string, role: AdminRole) => {
     setItems((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
     toast.success(`Đã gán quyền ${role}.`);
   };
-  const impersonate = (u: AdminUser) => {
+  const impersonate = async (u: AdminUser) => {
+    const ok = await confirm({
+      title: `Đăng nhập với tư cách ${u.name}?`,
+      description: "Hành động này sẽ được ghi vào audit log và bạn sẽ thấy giao diện đúng như người dùng đang thấy.",
+      tone: "warn", confirmLabel: "Tiếp tục",
+    });
+    if (!ok) return;
     toast.success(`Đang đăng nhập với tư cách ${u.name}…`, { description: "Chế độ giả lập — dùng để hỗ trợ / debug." });
   };
   const resetPassword = (u: AdminUser) => toast.success(`Đã gửi email đặt lại mật khẩu tới ${u.email}.`);
@@ -176,11 +231,23 @@ function UsersPanel() {
     else setSelected(new Set(filtered.map((u) => u.id)));
   };
   const selectedUsers = items.filter((u) => selected.has(u.id));
-  const bulkSuspend = () => {
+  const bulkSuspend = async () => {
+    const ok = await confirm({
+      title: `Khoá ${selected.size} người dùng?`,
+      description: "Tất cả người dùng đã chọn sẽ bị khoá ngay lập tức.",
+      tone: "warn", confirmLabel: "Khoá tất cả",
+    });
+    if (!ok) return;
     setItems((prev) => prev.map((u) => selected.has(u.id) ? { ...u, status: "suspended" } : u));
     toast.success(`Đã khoá ${selected.size} người dùng.`); setSelected(new Set());
   };
-  const bulkUpgrade = () => {
+  const bulkUpgrade = async () => {
+    const ok = await confirm({
+      title: `Nâng gói cho ${selected.size} người dùng?`,
+      description: "Các tài khoản đã chọn sẽ được nâng lên gói cao hơn.",
+      tone: "default", confirmLabel: "Nâng tất cả",
+    });
+    if (!ok) return;
     setItems((prev) => prev.map((u) => selected.has(u.id) ? { ...u, plan: u.plan === "Free" ? "Pro" : "Pro+" } : u));
     toast.success(`Đã nâng gói cho ${selected.size} người dùng.`); setSelected(new Set());
   };
@@ -207,6 +274,16 @@ function UsersPanel() {
             </button>
           ))}
         </div>
+        <FilterSelect
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as typeof statusFilter)}
+          options={[["all","Mọi trạng thái"],["active","Hoạt động"],["suspended","Tạm khoá"]]}
+        />
+        <FilterSelect
+          value={planFilter}
+          onChange={(v) => setPlanFilter(v as typeof planFilter)}
+          options={[["all","Mọi gói"],["Free","Free"],["Pro","Pro"],["Pro+","Pro+"]]}
+        />
         <button onClick={exportCsv} className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
           <Download className="size-4" /> Xuất CSV
         </button>
@@ -229,21 +306,27 @@ function UsersPanel() {
           <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
             <tr>
               <th className="px-5 py-3 w-10"><input type="checkbox" checked={filtered.length > 0 && filtered.every((u) => selected.has(u.id))} onChange={toggleAll} className="size-4 rounded border-slate-300 text-indigo-600" /></th>
-              <Th>Người dùng</Th><Th>Quyền</Th><Th>Gói</Th><Th>Trạng thái</Th><Th>Hoạt động gần nhất</Th><Th className="text-right">Hành động</Th>
+              <SortableTh sortKey="name" current={sortKey} dir={sortDir} onSort={onSort}>Người dùng</SortableTh>
+              <SortableTh sortKey="role" current={sortKey} dir={sortDir} onSort={onSort}>Quyền</SortableTh>
+              <SortableTh sortKey="plan" current={sortKey} dir={sortDir} onSort={onSort}>Gói</SortableTh>
+              <SortableTh sortKey="status" current={sortKey} dir={sortDir} onSort={onSort}>Trạng thái</SortableTh>
+              <SortableTh sortKey="lastActiveAt" current={sortKey} dir={sortDir} onSort={onSort}>Hoạt động gần nhất</SortableTh>
+              <SortableTh sortKey="lessonsCompleted" current={sortKey} dir={sortDir} onSort={onSort} align="right">Bài đã học</SortableTh>
+              <Th className="text-right">Hành động</Th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filtered.map((u) => (
-              <tr key={u.id} className="hover:bg-slate-50/60">
+            {sorted.map((u) => (
+              <tr key={u.id} className="hover:bg-indigo-50/40 transition-colors group">
                 <td className="px-5"><input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSel(u.id)} className="size-4 rounded border-slate-300 text-indigo-600" /></td>
                 <Td>
-                  <div className="flex items-center gap-3">
-                    <div className="size-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm">{u.name.charAt(0)}</div>
+                  <button onClick={() => setDetail(u)} className="flex items-center gap-3 text-left group/avatar -mx-1 px-1 py-1 rounded-xl hover:bg-white transition">
+                    <div className="size-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm shadow-sm group-hover/avatar:ring-2 group-hover/avatar:ring-indigo-300 transition">{u.name.charAt(0)}</div>
                     <div>
-                      <div className="font-semibold text-slate-800">{u.name}</div>
+                      <div className="font-semibold text-slate-800 group-hover/avatar:text-indigo-700">{u.name}</div>
                       <div className="text-xs text-slate-500">{u.email}</div>
                     </div>
-                  </div>
+                  </button>
                 </Td>
                 <Td><span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-1 rounded-md ${roleColor[u.role]}`}><ShieldCheck className="size-3" />{u.role}</span></Td>
                 <Td><span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md ${planColor[u.plan]}`}>{u.plan !== "Free" && <Crown className="size-3" />}{u.plan}</span></Td>
@@ -253,27 +336,28 @@ function UsersPanel() {
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"><Ban className="size-3.5" /> Tạm khoá</span>
                 )}</Td>
                 <Td className="text-slate-500 text-xs">{u.lastActiveAt}</Td>
+                <Td className="text-right text-slate-700 font-semibold">{u.lessonsCompleted}</Td>
                 <Td className="text-right">
                   <div className="inline-flex gap-1.5">
                     <ActionButton onClick={() => setDetail(u)} title="Xem chi tiết" tone="slate"><Eye className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => impersonate(u)} title="Đăng nhập với tư cách" tone="green"><LogIn className="size-3.5" /></ActionButton>
                     <ActionButton onClick={() => setNotifyTarget([u])} title="Gửi thông báo" tone="amber"><Mail className="size-3.5" /></ActionButton>
-                    <ActionButton onClick={() => upgrade(u.id)} title="Nâng gói" tone="amber"><Crown className="size-3.5" /></ActionButton>
-                    <ActionButton onClick={() => toggleStatus(u.id)} title={u.status === "active" ? "Khoá" : "Mở"} tone="slate">
+                    <ActionButton onClick={() => upgrade(u)} title="Nâng gói" tone="amber"><Crown className="size-3.5" /></ActionButton>
+                    <ActionButton onClick={() => toggleStatus(u)} title={u.status === "active" ? "Khoá" : "Mở"} tone="slate">
                       {u.status === "active" ? <Ban className="size-3.5" /> : <CheckCircle2 className="size-3.5" />}
                     </ActionButton>
-                    <ActionButton onClick={() => remove(u.id)} title="Xoá" tone="red"><Trash2 className="size-3.5" /></ActionButton>
+                    <ActionButton onClick={() => remove(u)} title="Xoá" tone="red"><Trash2 className="size-3.5" /></ActionButton>
                   </div>
                 </Td>
               </tr>
             ))}
-            {filtered.length === 0 && (<tr><td colSpan={7} className="p-8 text-center text-sm text-slate-500">Không có người dùng phù hợp.</td></tr>)}
+            {sorted.length === 0 && (<tr><td colSpan={8} className="p-8 text-center text-sm text-slate-500">Không có người dùng phù hợp.</td></tr>)}
           </tbody>
         </table>
       </div>
 
       {detail && (
-        <UserDetailModal
+        <UserDetailDrawer
           user={detail}
           onClose={() => setDetail(null)}
           onSetRole={(r) => setRole(detail.id, r)}
@@ -289,12 +373,30 @@ function UsersPanel() {
   );
 }
 
-function UserDetailModal({
+function UserDetailDrawer({
   user, onClose, onSetRole, onImpersonate, onResetPassword, onNotify,
 }: {
   user: AdminUser; onClose: () => void;
   onSetRole: (r: AdminRole) => void; onImpersonate: () => void; onResetPassword: () => void; onNotify: () => void;
 }) {
+  const allWords = useWords();
+  const learnedWords = useMemo(() => allWords.filter((w) => w.learned).slice(0, 12), [allWords]);
+
+  // Build a 14-day mock streak chart deterministically from the user id.
+  const streakBars = useMemo(() => {
+    const seed = user.id.charCodeAt(user.id.length - 1) || 1;
+    return Array.from({ length: 14 }, (_, i) => {
+      const v = ((Math.sin((i + 1) * seed * 1.7) + 1) / 2) * 100;
+      return Math.round(Math.max(8, v));
+    });
+  }, [user.id]);
+
+  // Payment history for this user: join via subscriptions.
+  const userPayments = useMemo(() => {
+    const subIds = mockSubscriptions.filter((s) => s.userId === user.id).map((s) => s.id);
+    return mockPayments.filter((p) => subIds.includes(p.subId));
+  }, [user.id]);
+
   const logins = mockLoginHistory[user.id] ?? mockLoginHistory.default;
   const activity = mockActivityLog[user.id] ?? mockActivityLog.default;
   const activityIcon: Record<string, { icon: typeof Activity; tone: string }> = {
@@ -307,7 +409,7 @@ function UserDetailModal({
   };
 
   return (
-    <Modal title="Chi tiết người dùng" onClose={onClose} wide>
+    <Drawer title="Chi tiết người dùng" subtitle={user.email} onClose={onClose}>
       <div className="space-y-5">
         <div className="flex items-start gap-4">
           <div className="size-16 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold text-2xl">{user.name.charAt(0)}</div>
@@ -348,13 +450,88 @@ function UserDetailModal({
         </div>
 
         <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Flame className="size-4 text-orange-500" />
+            <div className="text-xs font-bold uppercase text-slate-500">Streak 14 ngày</div>
+            <span className="ml-auto text-xs text-slate-500">🔥 {user.streak} ngày</span>
+          </div>
+          <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-2xl p-4">
+            <div className="flex items-end gap-1.5 h-24">
+              {streakBars.map((h, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <div
+                    className="w-full bg-gradient-to-t from-orange-500 to-amber-400 rounded-t-md hover:opacity-80 transition"
+                    style={{ height: `${h}%` }}
+                    title={`${h}%`}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-2">
+              <span>-13 ngày</span><span>hôm nay</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <BookOpenIcon className="size-4 text-slate-500" />
+            <div className="text-xs font-bold uppercase text-slate-500">Từ đã học</div>
+            <span className="ml-auto text-xs text-slate-500">{learnedWords.length} từ gần nhất</span>
+          </div>
+          {learnedWords.length === 0 ? (
+            <div className="text-xs text-slate-400 bg-slate-50 rounded-xl px-3 py-4 text-center">Chưa học từ nào.</div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {learnedWords.map((w) => (
+                <span key={w.id} className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-slate-700 text-xs px-2.5 py-1 rounded-lg transition" title={w.meaning}>
+                  <span className="font-semibold">{w.word}</span>
+                  <span className="text-slate-400 text-[10px]">{w.type}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Receipt className="size-4 text-slate-500" />
+            <div className="text-xs font-bold uppercase text-slate-500">Lịch sử thanh toán</div>
+          </div>
+          {userPayments.length === 0 ? (
+            <div className="text-xs text-slate-400 bg-slate-50 rounded-xl px-3 py-4 text-center">Người dùng chưa có giao dịch nào.</div>
+          ) : (
+            <div className="border border-slate-200 rounded-2xl overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-50 text-slate-500"><tr><th className="text-left px-3 py-2">Ngày</th><th className="text-left px-3 py-2">Số tiền</th><th className="text-left px-3 py-2">Phương thức</th><th className="text-left px-3 py-2">Hoá đơn</th><th className="text-left px-3 py-2">Trạng thái</th></tr></thead>
+                <tbody className="divide-y divide-slate-100">
+                  {userPayments.map((p) => (
+                    <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-3 py-2 text-slate-600">{p.at}</td>
+                      <td className="px-3 py-2 font-semibold text-slate-800">{p.amount.toLocaleString("vi-VN")} ₫</td>
+                      <td className="px-3 py-2"><span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{p.method}</span></td>
+                      <td className="px-3 py-2 font-mono text-slate-500">{p.invoice}</td>
+                      <td className="px-3 py-2">
+                        {p.status === "paid" && <span className="text-green-600 font-semibold">✓ Đã TT</span>}
+                        {p.status === "refunded" && <span className="text-amber-600 font-semibold">↺ Hoàn tiền</span>}
+                        {p.status === "failed" && <span className="text-red-600 font-semibold">✕ Thất bại</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div>
           <div className="flex items-center gap-2 mb-2"><Monitor className="size-4 text-slate-500" /><div className="text-xs font-bold uppercase text-slate-500">Lịch sử đăng nhập</div></div>
           <div className="border border-slate-200 rounded-2xl overflow-hidden">
             <table className="w-full text-xs">
               <thead className="bg-slate-50 text-slate-500"><tr><th className="text-left px-3 py-2">Thời gian</th><th className="text-left px-3 py-2">IP</th><th className="text-left px-3 py-2">Thiết bị</th><th className="text-left px-3 py-2">Vị trí</th><th className="text-left px-3 py-2">Kết quả</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {logins.map((l, i) => (
-                  <tr key={i} className="hover:bg-slate-50/60">
+                  <tr key={i} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-3 py-2 text-slate-600">{l.at}</td>
                     <td className="px-3 py-2 font-mono text-slate-700">{l.ip}</td>
                     <td className="px-3 py-2 text-slate-600">{l.device}</td>
@@ -390,7 +567,7 @@ function UserDetailModal({
           </ul>
         </div>
       </div>
-    </Modal>
+    </Drawer>
   );
 }
 
@@ -2092,5 +2269,190 @@ function IpBlocklistSection() {
         </table>
       </div>
     </div>
+  );
+}
+
+// ============ Confirm dialog ============
+
+type ConfirmOptions = {
+  title: string;
+  description?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: "danger" | "warn" | "default";
+};
+
+const ConfirmCtx = createContext<(opts: ConfirmOptions) => Promise<boolean>>(
+  () => Promise.resolve(false),
+);
+
+function useConfirm() {
+  return useContext(ConfirmCtx);
+}
+
+function ConfirmProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<
+    (ConfirmOptions & { resolve: (v: boolean) => void }) | null
+  >(null);
+
+  const ask = useCallback(
+    (opts: ConfirmOptions) =>
+      new Promise<boolean>((resolve) => setState({ ...opts, resolve })),
+    [],
+  );
+  const close = (v: boolean) => {
+    state?.resolve(v);
+    setState(null);
+  };
+  return (
+    <ConfirmCtx.Provider value={ask}>
+      {children}
+      {state && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => close(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="p-6 flex gap-4">
+              <div
+                className={`size-11 shrink-0 rounded-2xl flex items-center justify-center ${
+                  state.tone === "danger"
+                    ? "bg-red-100 text-red-600"
+                    : state.tone === "warn"
+                    ? "bg-amber-100 text-amber-600"
+                    : "bg-indigo-100 text-indigo-600"
+                }`}
+              >
+                {state.tone === "danger" ? (
+                  <AlertOctagon className="size-5" />
+                ) : state.tone === "warn" ? (
+                  <AlertTriangle className="size-5" />
+                ) : (
+                  <ShieldCheck className="size-5" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-slate-800">
+                  {state.title}
+                </h3>
+                {state.description && (
+                  <p className="text-sm text-slate-500 mt-1">
+                    {state.description}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/60">
+              <button
+                onClick={() => close(false)}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
+              >
+                {state.cancelLabel ?? "Huỷ"}
+              </button>
+              <button
+                onClick={() => close(true)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm transition ${
+                  state.tone === "danger"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : state.tone === "warn"
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
+              >
+                {state.confirmLabel ?? "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </ConfirmCtx.Provider>
+  );
+}
+
+// ============ Drawer (right-side panel) ============
+
+function Drawer({
+  title,
+  subtitle,
+  onClose,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex justify-end"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white w-full max-w-2xl h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">{title}</h2>
+            {subtitle && (
+              <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="size-9 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 transition"
+            aria-label="Đóng"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ============ Sortable table header ============
+
+type SortDir = "asc" | "desc";
+
+function SortableTh<K extends string>({
+  children,
+  sortKey,
+  current,
+  dir,
+  onSort,
+  className = "",
+  align = "left",
+}: {
+  children: React.ReactNode;
+  sortKey: K;
+  current: K | null;
+  dir: SortDir;
+  onSort: (k: K) => void;
+  className?: string;
+  align?: "left" | "right";
+}) {
+  const active = current === sortKey;
+  return (
+    <th className={`font-semibold px-5 py-3 ${align === "right" ? "text-right" : "text-left"} ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 group transition ${
+          active ? "text-indigo-700" : "text-slate-500 hover:text-slate-700"
+        }`}
+      >
+        <span>{children}</span>
+        {active ? (
+          dir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />
+        ) : (
+          <ArrowUpDown className="size-3 opacity-40 group-hover:opacity-80" />
+        )}
+      </button>
+    </th>
   );
 }
