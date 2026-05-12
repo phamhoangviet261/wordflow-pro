@@ -49,9 +49,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           ⚠️
         </div>
         <div className="text-xs font-bold tracking-widest text-blue-600">LỖI 500</div>
-        <h1 className="mt-1 text-2xl font-extrabold text-slate-800">
-          Trang chưa tải được
-        </h1>
+        <h1 className="mt-1 text-2xl font-extrabold text-slate-800">Trang chưa tải được</h1>
         <p className="mt-2 text-sm text-slate-500">
           Đã có sự cố khi tải dữ liệu. Bạn có thể thử lại hoặc quay về danh sách bộ từ vựng.
         </p>
@@ -94,17 +92,37 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Vocalab App" },
-      { name: "description", content: "WordFlow Pro is an interactive web app for mastering vocabulary through structured learning and engaging games." },
+      {
+        name: "description",
+        content:
+          "VocaLab is an interactive web app for mastering vocabulary through structured learning and engaging games.",
+      },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "Vocalab App" },
-      { property: "og:description", content: "WordFlow Pro is an interactive web app for mastering vocabulary through structured learning and engaging games." },
+      {
+        property: "og:description",
+        content:
+          "VocaLab is an interactive web app for mastering vocabulary through structured learning and engaging games.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Vocalab App" },
-      { name: "twitter:description", content: "WordFlow Pro is an interactive web app for mastering vocabulary through structured learning and engaging games." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0a59e8dc-b586-4032-93a4-ee1afb3fdda8/id-preview-da46822f--cf076082-e2ec-4967-9a6c-40e1ac0f4c25.lovable.app-1778434387404.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0a59e8dc-b586-4032-93a4-ee1afb3fdda8/id-preview-da46822f--cf076082-e2ec-4967-9a6c-40e1ac0f4c25.lovable.app-1778434387404.png" },
+      {
+        name: "twitter:description",
+        content:
+          "VocaLab is an interactive web app for mastering vocabulary through structured learning and engaging games.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0a59e8dc-b586-4032-93a4-ee1afb3fdda8/id-preview-da46822f--cf076082-e2ec-4967-9a6c-40e1ac0f4c25.lovable.app-1778434387404.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/0a59e8dc-b586-4032-93a4-ee1afb3fdda8/id-preview-da46822f--cf076082-e2ec-4967-9a6c-40e1ac0f4c25.lovable.app-1778434387404.png",
+      },
     ],
     links: [
       {
