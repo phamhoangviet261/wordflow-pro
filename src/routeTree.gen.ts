@@ -17,6 +17,7 @@ import { Route as AppStoreRouteImport } from './routes/_app.store'
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as ApiVocabSetsIndexRouteImport } from './routes/api/vocab-sets/index'
+import { Route as ApiGamificationIndexRouteImport } from './routes/api/gamification/index'
 import { Route as AppVocabSetsIndexRouteImport } from './routes/_app.vocab-sets.index'
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
@@ -62,6 +63,11 @@ const AppAdminRoute = AppAdminRouteImport.update({
 const ApiVocabSetsIndexRoute = ApiVocabSetsIndexRouteImport.update({
   id: '/api/vocab-sets/',
   path: '/api/vocab-sets/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGamificationIndexRoute = ApiGamificationIndexRouteImport.update({
+  id: '/api/gamification/',
+  path: '/api/gamification/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppVocabSetsIndexRoute = AppVocabSetsIndexRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/games/': typeof AppGamesIndexRoute
   '/vocab-sets/': typeof AppVocabSetsIndexRoute
+  '/api/gamification/': typeof ApiGamificationIndexRoute
   '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
 }
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/games': typeof AppGamesIndexRoute
   '/vocab-sets': typeof AppVocabSetsIndexRoute
+  '/api/gamification': typeof ApiGamificationIndexRoute
   '/api/vocab-sets': typeof ApiVocabSetsIndexRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
 }
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/_app/games/': typeof AppGamesIndexRoute
   '/_app/vocab-sets/': typeof AppVocabSetsIndexRoute
+  '/api/gamification/': typeof ApiGamificationIndexRoute
   '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
 }
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/api/auth/logout'
     | '/games/'
     | '/vocab-sets/'
+    | '/api/gamification/'
     | '/api/vocab-sets/'
     | '/api/auth/google/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/api/auth/logout'
     | '/games'
     | '/vocab-sets'
+    | '/api/gamification'
     | '/api/vocab-sets'
     | '/api/auth/google/callback'
   id:
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/api/auth/logout'
     | '/_app/games/'
     | '/_app/vocab-sets/'
+    | '/api/gamification/'
     | '/api/vocab-sets/'
     | '/api/auth/google/callback'
   fileRoutesById: FileRoutesById
@@ -207,6 +219,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRouteWithChildren
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiGamificationIndexRoute: typeof ApiGamificationIndexRoute
   ApiVocabSetsIndexRoute: typeof ApiVocabSetsIndexRoute
 }
 
@@ -266,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/api/vocab-sets'
       fullPath: '/api/vocab-sets/'
       preLoaderRoute: typeof ApiVocabSetsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/gamification/': {
+      id: '/api/gamification/'
+      path: '/api/gamification'
+      fullPath: '/api/gamification/'
+      preLoaderRoute: typeof ApiGamificationIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/vocab-sets/': {
@@ -363,6 +383,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRouteWithChildren,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiGamificationIndexRoute: ApiGamificationIndexRoute,
   ApiVocabSetsIndexRoute: ApiVocabSetsIndexRoute,
 }
 export const routeTree = rootRouteImport

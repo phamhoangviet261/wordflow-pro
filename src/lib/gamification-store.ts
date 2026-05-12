@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export type Quest = {
   id: string;
@@ -174,9 +175,41 @@ export function bumpStreak() {
   emit();
 }
 
-export function getState() { return state; }
+export function getState() {
+  return state;
+}
+
 export function useGamification() {
-  return useSyncExternalStore(sub, () => state, () => state);
+  const { data } = useQuery({
+    queryKey: ["gamification"],
+    queryFn: async () => {
+      const res = await fetch("/api/gamification");
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error.message);
+
+      // Transform nested API data to flattened store state
+      const apiData = json.data;
+      const formattedQuests: Quest[] = apiData.quests.map((q: any) => ({
+        id: q.id,
+        title: q.template.title,
+        description: q.template.description,
+        goal: q.template.goal,
+        progress: q.progress,
+        rewardXp: q.template.rewardXp,
+        rewardCoins: q.template.rewardCoins,
+        completed: q.completed,
+        claimed: q.claimed,
+      }));
+
+      return {
+        ...apiData,
+        quests: formattedQuests,
+      } as GamificationState;
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+
+  return data ?? state;
 }
 
 export const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100];
