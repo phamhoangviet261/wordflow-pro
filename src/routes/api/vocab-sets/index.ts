@@ -103,6 +103,100 @@ export const Route = createFileRoute("/api/vocab-sets/")({
           );
         }
       },
+      POST: async ({ request }) => {
+        const session = await getAuthSession();
+        const userId = session?.data.user?.userId;
+
+        if (!userId) {
+          return new Response(
+            JSON.stringify({
+              ok: false,
+              error: { code: "UNAUTHORIZED", message: "Login required." },
+            }),
+            { status: 401, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        try {
+          const body = await request.json();
+          const { title, description, color, wordIds, difficulty, tags } = body;
+
+          if (!title || !title.trim()) {
+            return new Response(
+              JSON.stringify({
+                ok: false,
+                error: { code: "VALIDATION_ERROR", message: "Title is required." },
+              }),
+              { status: 422, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          // 1. Create the VocabSet
+          const newSet = await db.vocabSet.create({
+            data: {
+              title: title.trim(),
+              description: description || null,
+              color: color || "from-green-400 to-emerald-500",
+              createdBy: userId,
+              isSystem: false,
+              isPublic: true,
+              status: "published",
+              difficulty: difficulty || null,
+              tags: tags || [],
+              // 2. Connect words via join table
+              words: {
+                create: (wordIds || []).map((id: string) => ({
+                  wordId: id,
+                })),
+              },
+            },
+            include: {
+              words: true,
+              _count: {
+                select: { words: true },
+              },
+            },
+          });
+
+          // 3. Automatically unlock for the creator
+          await db.userVocabSet.create({
+            data: {
+              userId: userId,
+              vocabSetId: newSet.id,
+              progressPercent: 0,
+              isFavorite: false,
+            },
+          });
+
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              data: {
+                id: newSet.id,
+                title: newSet.title,
+                description: newSet.description,
+                color: newSet.color,
+                wordIds: newSet.words.map((w) => w.wordId),
+                total: newSet._count.words,
+                learned: 0,
+                isSystem: newSet.isSystem,
+                createdAt: newSet.createdAt.toISOString(),
+                updatedAt: newSet.updatedAt.toISOString(),
+              },
+            }),
+            { headers: { "Content-Type": "application/json" } },
+          );
+        } catch (error: any) {
+          console.error("[api/vocab-sets] Error creating set:", error);
+          return new Response(
+            JSON.stringify({
+              ok: false,
+              error: { code: "INTERNAL_ERROR", message: "Failed to create vocabulary set." },
+            }),
+            { status: 500, headers: { "Content-Type": "application/json" } },
+          );
+        }
+      },
     },
   },
 });

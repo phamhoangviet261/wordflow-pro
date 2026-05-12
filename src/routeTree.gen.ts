@@ -23,6 +23,7 @@ import { Route as AppVocabSetsIndexRouteImport } from './routes/_app.vocab-sets.
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
 import { Route as ApiWordsBulkRouteImport } from './routes/api/words/bulk'
 import { Route as ApiWordsWordIdRouteImport } from './routes/api/words/$wordId'
+import { Route as ApiVocabSetsSetIdRouteImport } from './routes/api/vocab-sets/$setId'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
 import { Route as AppVocabSetsSetIdRouteImport } from './routes/_app.vocab-sets.$setId'
@@ -98,6 +99,11 @@ const ApiWordsWordIdRoute = ApiWordsWordIdRouteImport.update({
   path: '/api/words/$wordId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiVocabSetsSetIdRoute = ApiVocabSetsSetIdRouteImport.update({
+  id: '/api/vocab-sets/$setId',
+  path: '/api/vocab-sets/$setId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   id: '/api/auth/logout',
   path: '/api/auth/logout',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
   '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/vocab-sets/$setId': typeof ApiVocabSetsSetIdRoute
   '/api/words/$wordId': typeof ApiWordsWordIdRoute
   '/api/words/bulk': typeof ApiWordsBulkRoute
   '/games/': typeof AppGamesIndexRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
   '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/vocab-sets/$setId': typeof ApiVocabSetsSetIdRoute
   '/api/words/$wordId': typeof ApiWordsWordIdRoute
   '/api/words/bulk': typeof ApiWordsBulkRoute
   '/games': typeof AppGamesIndexRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/_app/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
   '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/vocab-sets/$setId': typeof ApiVocabSetsSetIdRoute
   '/api/words/$wordId': typeof ApiWordsWordIdRoute
   '/api/words/bulk': typeof ApiWordsBulkRoute
   '/_app/games/': typeof AppGamesIndexRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/vocab-sets/$setId'
     | '/api/auth/google'
     | '/api/auth/logout'
+    | '/api/vocab-sets/$setId'
     | '/api/words/$wordId'
     | '/api/words/bulk'
     | '/games/'
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/vocab-sets/$setId'
     | '/api/auth/google'
     | '/api/auth/logout'
+    | '/api/vocab-sets/$setId'
     | '/api/words/$wordId'
     | '/api/words/bulk'
     | '/games'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/_app/vocab-sets/$setId'
     | '/api/auth/google'
     | '/api/auth/logout'
+    | '/api/vocab-sets/$setId'
     | '/api/words/$wordId'
     | '/api/words/bulk'
     | '/_app/games/'
@@ -255,6 +267,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRouteWithChildren
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiVocabSetsSetIdRoute: typeof ApiVocabSetsSetIdRoute
   ApiWordsWordIdRoute: typeof ApiWordsWordIdRoute
   ApiWordsBulkRoute: typeof ApiWordsBulkRoute
   ApiGamificationIndexRoute: typeof ApiGamificationIndexRoute
@@ -362,6 +375,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWordsWordIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/vocab-sets/$setId': {
+      id: '/api/vocab-sets/$setId'
+      path: '/api/vocab-sets/$setId'
+      fullPath: '/api/vocab-sets/$setId'
+      preLoaderRoute: typeof ApiVocabSetsSetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/logout': {
       id: '/api/auth/logout'
       path: '/api/auth/logout'
@@ -443,6 +463,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRouteWithChildren,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiVocabSetsSetIdRoute: ApiVocabSetsSetIdRoute,
   ApiWordsWordIdRoute: ApiWordsWordIdRoute,
   ApiWordsBulkRoute: ApiWordsBulkRoute,
   ApiGamificationIndexRoute: ApiGamificationIndexRoute,

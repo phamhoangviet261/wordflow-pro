@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
-import { ArrowLeft, ListChecks, Play, Volume2, Sparkles, Trash2, SearchX, Home, RotateCcw } from "lucide-react";
-import { words as allWords } from "@/lib/mock-data";
-import { useVocabSets, deleteVocabSet } from "@/lib/sets-store";
+import { ArrowLeft, ListChecks, Play, Volume2, Sparkles, Trash2, SearchX, Home, RotateCcw, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/vocab-sets/$setId")({
@@ -84,8 +83,15 @@ function SetNotFound({
 function SetDetailPage() {
   const { setId } = Route.useParams();
   const router = useRouter();
-  const sets = useVocabSets();
-  const set = sets.find((s) => s.id === setId);
+  const queryClient = useQueryClient();
+
+  const { data: response, isLoading, isError, error } = useQuery({
+    queryKey: ["vocab-set", setId],
+    queryFn: async () => {
+      const res = await fetch(`/api/vocab-sets/${setId}`);
+      return res.json();
+    },
+  });
 
   const speak = (text: string) => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -95,13 +101,30 @@ function SetDetailPage() {
     }
   };
 
-  if (!set) {
-    throw notFound();
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Loader2 className="size-10 animate-spin text-green-500" />
+        <p className="text-slate-500 font-medium">Đang tải bộ từ...</p>
+      </div>
+    );
   }
 
-  const setWords = set.wordIds.map((id) => allWords.find((w) => w.id === id)).filter(Boolean) as typeof allWords;
-  const learned = setWords.filter((w) => w.learned).length;
-  const pct = setWords.length > 0 ? Math.round((learned / setWords.length) * 100) : 0;
+  if (isError || (response && !response.ok)) {
+    const msg = response?.error?.message || (error as Error)?.message || "Không thể tải bộ từ.";
+    return (
+      <SetNotFound
+        title="Có lỗi khi tải bộ từ"
+        description={msg}
+        onRetry={() => queryClient.invalidateQueries({ queryKey: ["vocab-set", setId] })}
+      />
+    );
+  }
+
+  const set = response.data;
+  const setWords = set.words || [];
+  const learned = set.learned || 0;
+  const pct = set.total > 0 ? Math.round((learned / set.total) * 100) : 0;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -127,7 +150,10 @@ function SetDetailPage() {
               <Play className="size-4" /> Luyện tập
             </Link>
             <button
-              onClick={() => { deleteVocabSet(set.id); toast.success(`Đã xoá "${set.title}"`); router.navigate({ to: "/vocab-sets" }); }}
+              onClick={() => {
+                // TODO: Implement DELETE /api/vocab-sets/:setId
+                toast.error("Tính năng xoá đang được phát triển.");
+              }}
               className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white font-semibold text-sm px-4 py-2.5 rounded-2xl backdrop-blur transition"
             >
               <Trash2 className="size-4" /> Xoá
