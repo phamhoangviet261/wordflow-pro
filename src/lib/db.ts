@@ -67,7 +67,7 @@ function createPrismaClient(): PrismaClient {
     console.log("[db] Creating PrismaClient with adapter and logging enabled...");
     prisma = new PrismaClient({
       adapter,
-      log: ["query", "error", "info", "warn"],
+      log: ["error"],
     });
 
     console.log("[db] PrismaClient instance created successfully.");

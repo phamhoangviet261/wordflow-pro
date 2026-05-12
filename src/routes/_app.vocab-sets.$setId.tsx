@@ -13,6 +13,35 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+interface Word {
+  id: string;
+  word: string;
+  phonetic: string;
+  meaning: string;
+  type: "NOUN" | "VERB" | "ADJ" | "ADV";
+  example: string;
+  learned: boolean;
+}
 
 export const Route = createFileRoute("/_app/vocab-sets/$setId")({
   head: () => ({
@@ -110,6 +139,39 @@ function SetDetailPage() {
     },
   });
 
+  const [editingWord, setEditingWord] = useState<Word | null>(null);
+  const [editForm, setEditForm] = useState({
+    word: "",
+    phonetic: "",
+    meaning: "",
+    type: "NOUN" as "NOUN" | "VERB" | "ADJ" | "ADV",
+    example: "",
+  });
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWord) return;
+
+    try {
+      const res = await fetch(`/api/words/${editingWord.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+
+      if (res.ok) {
+        toast.success("Cập nhật từ vựng thành công!");
+        setEditingWord(null);
+        queryClient.invalidateQueries({ queryKey: ["vocab-set", setId] });
+      } else {
+        const data = await res.json();
+        toast.error(data.error?.message || "Không thể cập nhật từ vựng.");
+      }
+    } catch (err) {
+      toast.error("Đã xảy ra lỗi kết nối.");
+    }
+  };
+
   const speak = (text: string) => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       const u = new SpeechSynthesisUtterance(text);
@@ -170,6 +232,7 @@ function SetDetailPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               to="/games/flashcard"
+              search={{ setId }}
               className="inline-flex items-center gap-2 bg-white text-slate-800 font-bold text-sm px-4 py-2.5 rounded-2xl shadow-md hover:bg-slate-100 transition"
             >
               <Play className="size-4" /> Luyện tập
@@ -201,7 +264,7 @@ function SetDetailPage() {
           <div className="p-8 text-center text-sm text-slate-500">Bộ này chưa có từ nào.</div>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {setWords.map((w: any) => (
+            {setWords.map((w: Word) => (
               <li
                 key={w.id}
                 className="flex items-center gap-4 px-5 py-3 hover:bg-slate-50/60 transition"
@@ -213,10 +276,24 @@ function SetDetailPage() {
                 >
                   <Volume2 className="size-4" />
                 </button>
-                <div className="w-40 shrink-0">
-                  <div className="font-bold text-slate-800">{w.word}</div>
+                <button
+                  onClick={() => {
+                    setEditingWord(w);
+                    setEditForm({
+                      word: w.word,
+                      phonetic: w.phonetic,
+                      meaning: w.meaning,
+                      type: w.type,
+                      example: w.example,
+                    });
+                  }}
+                  className="w-40 shrink-0 text-left group/word"
+                >
+                  <div className="font-bold text-slate-800 group-hover/word:text-blue-600 transition-colors">
+                    {w.word}
+                  </div>
                   <div className="text-xs text-slate-400">{w.phonetic}</div>
-                </div>
+                </button>
                 <div className="flex-1 text-sm text-slate-600">{w.meaning}</div>
                 <span
                   className={`text-[10px] font-bold px-2 py-1 rounded-md ${typeColors[w.type]}`}
@@ -233,6 +310,107 @@ function SetDetailPage() {
           </ul>
         )}
       </div>
+
+      <Dialog open={!!editingWord} onOpenChange={(open) => !open && setEditingWord(null)}>
+        <DialogContent className="sm:max-w-[500px] rounded-3xl text-slate-900">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <Sparkles className="size-6 text-blue-500" /> Chỉnh sửa từ vựng
+            </DialogTitle>
+            <DialogDescription className="text-slate-500">
+              Cập nhật thông tin cho từ "{editingWord?.word}".
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-5 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-word" className="text-sm font-semibold text-slate-700">
+                  Từ vựng
+                </Label>
+                <Input
+                  id="edit-word"
+                  value={editForm.word}
+                  onChange={(e) => setEditForm({ ...editForm, word: e.target.value })}
+                  placeholder="Vd: Apple"
+                  className="rounded-xl border-slate-200 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phonetic" className="text-sm font-semibold text-slate-700">
+                  Phiên âm
+                </Label>
+                <Input
+                  id="edit-phonetic"
+                  value={editForm.phonetic}
+                  onChange={(e) => setEditForm({ ...editForm, phonetic: e.target.value })}
+                  placeholder="Vd: /ˈæp.əl/"
+                  className="rounded-xl border-slate-200 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-type" className="text-sm font-semibold text-slate-700">
+                Loại từ
+              </Label>
+              <Select
+                value={editForm.type}
+                onValueChange={(val: any) => setEditForm({ ...editForm, type: val })}
+              >
+                <SelectTrigger className="rounded-xl border-slate-200">
+                  <SelectValue placeholder="Chọn loại từ" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="NOUN">Danh từ (Noun)</SelectItem>
+                  <SelectItem value="VERB">Động từ (Verb)</SelectItem>
+                  <SelectItem value="ADJ">Tính từ (Adj)</SelectItem>
+                  <SelectItem value="ADV">Trạng từ (Adv)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-meaning" className="text-sm font-semibold text-slate-700">
+                Nghĩa của từ
+              </Label>
+              <Input
+                id="edit-meaning"
+                value={editForm.meaning}
+                onChange={(e) => setEditForm({ ...editForm, meaning: e.target.value })}
+                placeholder="Vd: Quả táo"
+                className="rounded-xl border-slate-200 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-example" className="text-sm font-semibold text-slate-700">
+                Ví dụ
+              </Label>
+              <Textarea
+                id="edit-example"
+                value={editForm.example}
+                onChange={(e) => setEditForm({ ...editForm, example: e.target.value })}
+                placeholder="Nhập ví dụ sử dụng từ này..."
+                className="rounded-xl border-slate-200 focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
+              />
+            </div>
+            <DialogFooter className="pt-4 gap-2 sm:gap-0">
+              <button
+                type="button"
+                onClick={() => setEditingWord(null)}
+                className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition shadow-md shadow-blue-200"
+              >
+                Lưu thay đổi
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

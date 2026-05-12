@@ -83,6 +83,9 @@ function VocabularyPage() {
   };
   const [form, setForm] = useState(emptyForm);
 
+  const [editingWord, setEditingWord] = useState<Word | null>(null);
+  const [editForm, setEditForm] = useState(emptyForm);
+
   const { data, isLoading } = useQuery({
     queryKey: ["words", { q, typeFilter, statusFilter, sortKey, sortDir, page, pageSize }],
     queryFn: async () => {
@@ -139,6 +142,45 @@ function VocabularyPage() {
       }
     } catch (error) {
       console.error("Error adding word:", error);
+      toast.error("Lỗi kết nối máy chủ.");
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWord) return;
+
+    if (!editForm.word.trim() || !editForm.meaning.trim()) {
+      toast.error("Vui lòng nhập từ và nghĩa.");
+      return;
+    }
+
+    const wordPayload = {
+      word: editForm.word.trim(),
+      phonetic: editForm.phonetic.trim() || `/${editForm.word.trim()}/`,
+      meaning: editForm.meaning.trim(),
+      type: editForm.type,
+      example: editForm.example.trim(),
+    };
+
+    try {
+      const response = await fetch(`/api/words/${editingWord.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(wordPayload),
+      });
+
+      const json = await response.json();
+
+      if (json.ok) {
+        queryClient.invalidateQueries({ queryKey: ["words"] });
+        toast.success(`Đã cập nhật "${editForm.word.trim()}"`);
+        setEditingWord(null);
+      } else {
+        toast.error(json.error?.message || "Không thể cập nhật từ.");
+      }
+    } catch (error) {
+      console.error("Error updating word:", error);
       toast.error("Lỗi kết nối máy chủ.");
     }
   };
@@ -468,6 +510,97 @@ function VocabularyPage() {
               </form>
             </DialogContent>
           </Dialog>
+
+          <Dialog
+            open={!!editingWord}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) setEditingWord(null);
+            }}
+          >
+            <DialogContent className="rounded-2xl sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Sửa từ vựng</DialogTitle>
+                <DialogDescription>Cập nhật thông tin cho từ vựng của bạn.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleEditSubmit} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Từ *</label>
+                    <input
+                      autoFocus
+                      value={editForm.word}
+                      onChange={(e) => setEditForm({ ...editForm, word: e.target.value })}
+                      maxLength={60}
+                      className="mt-1 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Phiên âm</label>
+                    <input
+                      value={editForm.phonetic}
+                      onChange={(e) => setEditForm({ ...editForm, phonetic: e.target.value })}
+                      maxLength={60}
+                      placeholder="/həˈloʊ/"
+                      className="mt-1 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <label className="text-xs font-medium text-slate-600">Nghĩa *</label>
+                    <input
+                      value={editForm.meaning}
+                      onChange={(e) => setEditForm({ ...editForm, meaning: e.target.value })}
+                      maxLength={200}
+                      className="mt-1 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Loại từ</label>
+                    <Select
+                      value={editForm.type}
+                      onValueChange={(v) => setEditForm({ ...editForm, type: v as Word["type"] })}
+                    >
+                      <SelectTrigger className="mt-1 rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NOUN">NOUN</SelectItem>
+                        <SelectItem value="VERB">VERB</SelectItem>
+                        <SelectItem value="ADJ">ADJ</SelectItem>
+                        <SelectItem value="ADV">ADV</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Ví dụ</label>
+                  <textarea
+                    value={editForm.example}
+                    onChange={(e) => setEditForm({ ...editForm, example: e.target.value })}
+                    rows={2}
+                    maxLength={500}
+                    className="mt-1 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+                <DialogFooter>
+                  <button
+                    type="button"
+                    onClick={() => setEditingWord(null)}
+                    className="px-4 py-2 rounded-2xl text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  >
+                    Huỷ
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-2xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Lưu thay đổi
+                  </button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -512,63 +645,66 @@ function VocabularyPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {paged.map(
-                (w: {
-                  id: any;
-                  word: any;
-                  phonetic: any;
-                  meaning: any;
-                  type: any;
-                  example: any;
-                  learned: any;
-                  status?: "draft" | "published" | undefined;
-                  difficulty?: 2 | 1 | 4 | 3 | 5 | undefined;
-                  tags?: string[] | undefined;
-                }) => (
-                  <tr key={w.id} className="hover:bg-slate-50/70 transition group">
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => speak(w.word)}
-                        className="size-9 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center"
-                        aria-label={`Nghe phát âm ${w.word}`}
-                      >
-                        <Volume2 className="size-4" />
-                      </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-slate-800">{w.word}</div>
+              {paged.map((w: Word) => (
+                <tr key={w.id} className="hover:bg-slate-50/70 transition group">
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => speak(w.word)}
+                      className="size-9 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center"
+                      aria-label={`Nghe phát âm ${w.word}`}
+                    >
+                      <Volume2 className="size-4" />
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => {
+                        setEditingWord(w);
+                        setEditForm({
+                          word: w.word,
+                          phonetic: w.phonetic,
+                          meaning: w.meaning,
+                          type: w.type,
+                          example: w.example,
+                        });
+                      }}
+                      className="text-left group/word"
+                    >
+                      <div className="font-bold text-slate-800 group-hover/word:text-blue-600 transition-colors cursor-pointer underline-offset-4 group-hover/word:underline decoration-blue-200">
+                        {w.word}
+                      </div>
                       <div className="text-xs text-slate-400">{w.phonetic}</div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 hidden md:table-cell">{w.meaning}</td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-1 rounded-md ${typeColors[w.type]}`}
-                      >
-                        {w.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 italic hidden lg:table-cell max-w-xs truncate">
-                      "{w.example}"
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Switch
-                        checked={w.learned}
-                        onCheckedChange={(v) => toggleLearned(w, v)}
-                        className="data-[state=checked]:bg-green-500"
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => handleDelete(w)}
-                        className="size-9 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600 inline-flex items-center justify-center transition opacity-0 group-hover:opacity-100"
-                        aria-label={`Xoá ${w.word}`}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ),
-              )}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600 hidden md:table-cell">{w.meaning}</td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-1 rounded-md ${typeColors[w.type]}`}
+                    >
+                      {w.type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 italic hidden lg:table-cell max-w-xs truncate">
+                    "{w.example}"
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <Switch
+                      checked={w.learned}
+                      onCheckedChange={(v) => toggleLearned(w, v)}
+                      className="data-[state=checked]:bg-green-500"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => handleDelete(w)}
+                      className="size-9 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600 inline-flex items-center justify-center transition opacity-0 group-hover:opacity-100"
+                      aria-label={`Xoá ${w.word}`}
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
               {paged.length === 0 && (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-sm text-slate-500">
