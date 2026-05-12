@@ -1,11 +1,16 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, X, RotateCcw, Volume2, Trophy } from "lucide-react";
-import { words as allWords, type Word } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight, Check, X, RotateCcw, Volume2, Trophy, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { awardXp, awardCoins, bumpStreak, questProgress } from "@/lib/gamification-store";
 import { SessionCompleteModal, type SessionResult } from "@/components/gamification/SessionCompleteModal";
 
 export const Route = createFileRoute("/_app/games/flashcard")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      setId: (search.setId as string) || "all",
+    };
+  },
   head: () => ({
     meta: [
       { title: "Flashcard — VocabLab" },
@@ -25,19 +30,40 @@ function speak(text: string) {
 
 function FlashcardGame() {
   const router = useRouter();
-  const deck: Word[] = useMemo(() => allWords.slice(0, 8), []);
+  const { setId } = Route.useSearch();
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  // results: undefined | true (known) | false (unknown)
-  const [results, setResults] = useState<(boolean | undefined)[]>(() => deck.map(() => undefined));
   const [sessionResult, setSessionResult] = useState<SessionResult | null>(null);
 
+  const { data: wordsResponse, isLoading, isError } = useQuery({
+    queryKey: ["flashcard-words", setId],
+    queryFn: async () => {
+      const url = setId === "all" ? "/api/words?pageSize=20" : `/api/vocab-sets/${setId}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => ({}));
+        throw new Error(errorJson.error?.message || `Server error: ${res.status}`);
+      }
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error?.message || "Failed to fetch data");
+      return setId === "all" ? json.data.items : json.data.words;
+    },
+  });
+
+  const deck = wordsResponse || [];
+  const [results, setResults] = useState<(boolean | undefined)[]>([]);
   const total = deck.length;
   const current = deck[index];
   const answered = results.filter((r) => r !== undefined).length;
   const correct = results.filter((r) => r === true).length;
-  const progress = Math.round((answered / total) * 100);
-  const finished = answered === total;
+  const progress = total > 0 ? Math.round((answered / total) * 100) : 0;
+  const finished = total > 0 && answered === total;
+
+  useEffect(() => {
+    if (deck.length > 0) {
+      setResults(new Array(deck.length).fill(undefined));
+    }
+  }, [deck]);
 
   const go = (next: number) => {
     setFlipped(false);
@@ -70,7 +96,7 @@ function FlashcardGame() {
   };
 
   useEffect(() => {
-    if (!finished || sessionResult) return;
+    if (!finished || sessionResult || total === 0) return;
     const bonusXp = 20 + correct * 2;
     const bonusCoins = 10 + correct * 3;
     awardXp(bonusXp);
@@ -85,6 +111,35 @@ function FlashcardGame() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Loader2 className="size-10 animate-spin text-purple-500" />
+        <p className="text-slate-500 font-medium">Đang chuẩn bị bộ thẻ...</p>
+      </div>
+    );
+  }
+
+  if (isError || deck.length === 0) {
+    return (
+      <div className="max-w-md mx-auto py-16 text-center">
+        <div className="text-4xl mb-4">🏜️</div>
+        <h2 className="text-xl font-bold text-slate-800">Không có từ vựng nào</h2>
+        <p className="text-slate-500 mt-2">
+          {isError 
+            ? "Xảy ra lỗi khi tải bộ từ. Hãy thử lại sau nhé!"
+            : "Bộ từ này đang trống. Hãy thêm từ vựng vào bộ này để bắt đầu luyện tập!"}
+        </p>
+        <Link
+          to="/games"
+          className="mt-6 inline-flex bg-purple-600 text-white font-bold px-6 py-2.5 rounded-2xl shadow-lg hover:bg-purple-700 transition"
+        >
+          Quay lại chọn bộ
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 py-2">

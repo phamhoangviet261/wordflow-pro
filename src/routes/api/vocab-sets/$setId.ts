@@ -21,6 +21,18 @@ export const Route = createFileRoute("/api/vocab-sets/$setId")({
         }
 
         try {
+          // Basic UUID validation to prevent Prisma crash
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (!uuidRegex.test(setId)) {
+            return new Response(
+              JSON.stringify({
+                ok: false,
+                error: { code: "INVALID_ID", message: "Invalid Vocabulary Set ID format." },
+              }),
+              { status: 400, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
           const set = await db.vocabSet.findUnique({
             where: { id: setId },
             include: {
@@ -43,9 +55,10 @@ export const Route = createFileRoute("/api/vocab-sets/$setId")({
           }
 
           // Check if user has access (is creator or is system set)
-          // Actually, in the spec, users unlock sets. 
-          // For now, let's allow if createdBy === userId OR isSystem === true.
-          if (set.createdBy !== userId && !set.isSystem) {
+          const isCreator = set.createdBy === userId;
+          const isSystem = set.isSystem;
+
+          if (!isCreator && !isSystem) {
              return new Response(
               JSON.stringify({
                 ok: false,
@@ -56,12 +69,15 @@ export const Route = createFileRoute("/api/vocab-sets/$setId")({
           }
 
           // Fetch user progress for words in this set
-          const userWords = await db.userWord.findMany({
-            where: {
-              userId: userId,
-              wordId: { in: set.words.map((w) => w.wordId) },
-            },
-          });
+          const wordIds = set.words.map((w) => w.wordId);
+          const userWords = wordIds.length > 0 
+            ? await db.userWord.findMany({
+                where: {
+                  userId: userId,
+                  wordId: { in: wordIds },
+                },
+              })
+            : [];
 
           const userWordMap = new Map(userWords.map((uw) => [uw.wordId, uw]));
 
@@ -102,11 +118,14 @@ export const Route = createFileRoute("/api/vocab-sets/$setId")({
             { headers: { "Content-Type": "application/json" } },
           );
         } catch (error: any) {
-          console.error("[api/vocab-sets/$setId] Error:", error);
+          console.error(`[api/vocab-sets/${setId}] Error:`, error);
           return new Response(
             JSON.stringify({
               ok: false,
-              error: { code: "INTERNAL_ERROR", message: "Failed to fetch set details." },
+              error: { 
+                code: "INTERNAL_ERROR", 
+                message: error.message || "Failed to fetch set details." 
+              },
             }),
             { status: 500, headers: { "Content-Type": "application/json" } },
           );
