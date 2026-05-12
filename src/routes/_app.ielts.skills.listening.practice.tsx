@@ -23,6 +23,7 @@ import {
   ChevronDown,
   XCircle,
 } from "lucide-react";
+import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/ielts/skills/listening/practice")({
@@ -35,52 +36,40 @@ export const Route = createFileRoute("/_app/ielts/skills/listening/practice")({
 const QUESTIONS = [
   {
     id: 1,
-    label: "1. Phone number:",
-    prefix: "07982",
+    label: "John works at Old Time Toys. Yes/No?",
+    prefix: "",
     suffix: "",
-    correctAnswer: "441236",
-    timestamp: 10,
-    explanation:
-      "Số điện thoại thường được đọc theo từng cụm. Hãy chú ý các con số lặp lại và nhịp nghỉ của người nói.",
+    correctAnswer: "No",
+    timestamp: 15,
+    explanation: "Marina nói cô ấy gọi từ Old Time Toys, còn John là người nhận cuộc gọi.",
   },
   {
     id: 2,
-    label: "2. Date of appointment:",
+    label: "Marina wants product information, ",
     prefix: "",
-    suffix: "April",
-    correctAnswer: "15th",
-    timestamp: 24,
-    explanation:
-      "Ngày tháng có thể được đọc là “the fifteenth of April” hoặc “April the fifteenth”.",
+    suffix: "and prices.",
+    correctAnswer: "a brochure",
+    timestamp: 45,
+    explanation: "Marina yêu cầu gửi 'new brochure and information about your prices'.",
   },
   {
     id: 3,
-    label: "3. Surname:",
+    label: "Marina's number is ",
     prefix: "",
     suffix: "",
-    correctAnswer: "Henderson",
-    timestamp: 37,
-    explanation: "Họ và tên riêng thường được đánh vần từng chữ cái trong IELTS Listening Part 1.",
+    correctAnswer: "0208 6557621",
+    timestamp: 35,
+    explanation: "Số điện thoại được đọc là 0-2-0-8, 6-5-5-7-6-2-1.",
   },
   {
     id: 4,
-    label: "4. Email:",
-    prefix: "martin.",
-    suffix: "@mail.com",
-    correctAnswer: "green",
-    timestamp: 50,
-    explanation:
-      "Với email, hãy chú ý các từ như dot (dấu chấm), dash (dấu gạch ngang), underscore (gạch dưới) và spelling trước dấu @.",
-  },
-  {
-    id: 5,
-    label: "5. Postcode:",
+    label: "Marina's email address is ",
     prefix: "",
-    suffix: "4QP",
-    correctAnswer: "SW12",
-    timestamp: 65,
+    suffix: "",
+    correctAnswer: "marina.silva@oldtime-toys.com",
+    timestamp: 55,
     explanation:
-      "Mã bưu điện thường kết hợp cả chữ cái và con số, hãy viết chính xác thứ tự nghe được.",
+      "Email được đánh vần: M-A-R-I-N-A (marina) dot Silva (silva) at O-L-D-T-I-M-E hyphen toys (oldtime-toys) dot com.",
   },
 ];
 
@@ -187,8 +176,8 @@ function IELTSListeningPracticePage() {
   const [selectedColor, setSelectedColor] = useState(HIGHLIGHT_COLORS[0]);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(45);
-  const duration = 155; // 02:35
+  const [currentTime, setCurrentTime] = useState(0);
+  const duration = 90; // 01:30
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -196,7 +185,18 @@ function IELTSListeningPracticePage() {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const audioRef = useRef<HTMLAudioElement>(null);
   const navigate = useNavigate();
+
+  // Sync isPlaying with audio element
+  useEffect(() => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.play().catch((err) => console.log("Audio play failed:", err));
+    } else {
+      audioRef.current.pause();
+    }
+  }, [isPlaying]);
 
   const isTranscriptVisible = isSubmitted || isTranscriptManualUnlocked;
 
@@ -355,7 +355,6 @@ function IELTSListeningPracticePage() {
           />
         </div>
 
-
         <div className="p-4 border-t border-slate-800">
           <button
             onClick={() => navigate({ to: "/ielts/skills/listening" })}
@@ -380,10 +379,10 @@ function IELTSListeningPracticePage() {
             </Link>
             <div>
               <h1 className="text-sm font-black text-slate-800 tracking-tight">
-                Numbers, Dates & Spelling
+                A voicemail message
               </h1>
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                IELTS Listening • Practice Mode
+                British Council • A1 Listening
               </div>
             </div>
           </div>
@@ -543,38 +542,37 @@ function IELTSListeningPracticePage() {
                             : "bg-orange-100 text-orange-700 underline decoration-2"),
                       )}
                     >
-                      07982 441236
+                      0452365478
                     </span>
-                    .
-                  </p>
-
-                  <p>
-                    <span className="font-bold text-slate-800">Receptionist:</span> And what date
-                    would you like to book the appointment?
                   </p>
                   <p>
-                    <span className="font-bold text-slate-800">Student:</span> The{" "}
+                    <span className="font-bold text-slate-800">Receptionist:</span> Thank you.
+                  </p>
+                  <p>
+                    <span className="font-bold text-slate-800">John:</span> Hi, this is John. Thanks
+                    for calling. I'm not here at the moment, so please leave a message and I'll call
+                    you back.
+                  </p>
+                  <p>
+                    <span className="font-bold text-slate-800">Marina:</span> Hi, John, this is
+                    Marina Silva calling from{" "}
                     <span
                       className={cn(
                         "px-1 rounded-sm font-bold",
                         isSubmitted &&
-                          (userAnswers[1].trim().toLowerCase() ===
-                          QUESTIONS[1].correctAnswer.toLowerCase()
+                          (userAnswers[0].trim().toLowerCase() ===
+                          QUESTIONS[0].correctAnswer.toLowerCase()
                             ? "bg-green-100 text-green-700"
                             : "bg-orange-100 text-orange-700 underline decoration-2"),
                       )}
                     >
-                      15th
-                    </span>{" "}
-                    of April, if possible.
-                  </p>
-
-                  <p>
-                    <span className="font-bold text-slate-800">Receptionist:</span> Could you spell
-                    your surname?
+                      Old Time Toys
+                    </span>
+                    . Your colleague Alex gave me your phone number. She said you can help me.
                   </p>
                   <p>
-                    <span className="font-bold text-slate-800">Student:</span> Sure. It’s{" "}
+                    I need some information on your new products. Could you please call me when you
+                    are back in the office? My phone number is{" "}
                     <span
                       className={cn(
                         "px-1 rounded-sm font-bold",
@@ -585,17 +583,25 @@ function IELTSListeningPracticePage() {
                             : "bg-orange-100 text-orange-700 underline decoration-2"),
                       )}
                     >
-                      Henderson
+                      0-2-0-8, 6-5-5-7-6-2-1
                     </span>
-                    . H-E-N-D-E-R-S-O-N.
-                  </p>
-
-                  <p>
-                    <span className="font-bold text-slate-800">Receptionist:</span> And your email
-                    address?
+                    .
                   </p>
                   <p>
-                    <span className="font-bold text-slate-800">Student:</span> It’s martin.
+                    Also, can you please email me your new{" "}
+                    <span
+                      className={cn(
+                        "px-1 rounded-sm font-bold",
+                        isSubmitted &&
+                          (userAnswers[1].trim().toLowerCase() ===
+                          QUESTIONS[1].correctAnswer.toLowerCase()
+                            ? "bg-green-100 text-green-700"
+                            : "bg-orange-100 text-orange-700 underline decoration-2"),
+                      )}
+                    >
+                      brochure
+                    </span>{" "}
+                    and information about your prices? My email address is{" "}
                     <span
                       className={cn(
                         "px-1 rounded-sm font-bold",
@@ -606,31 +612,11 @@ function IELTSListeningPracticePage() {
                             : "bg-orange-100 text-orange-700 underline decoration-2"),
                       )}
                     >
-                      green
+                      Marina.Silva@oldtime-toys.com
                     </span>
-                    @mail.com.
+                    .
                   </p>
-
-                  <p>
-                    <span className="font-bold text-slate-800">Receptionist:</span> Finally, what’s
-                    your postcode?
-                  </p>
-                  <p>
-                    <span className="font-bold text-slate-800">Student:</span> It’s{" "}
-                    <span
-                      className={cn(
-                        "px-1 rounded-sm font-bold",
-                        isSubmitted &&
-                          (userAnswers[4].trim().toLowerCase() ===
-                          QUESTIONS[4].correctAnswer.toLowerCase()
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700 underline decoration-2"),
-                      )}
-                    >
-                      SW12
-                    </span>{" "}
-                    4QP.
-                  </p>
+                  <p>Thanks a lot. I look forward to hearing from you.</p>
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
@@ -660,7 +646,7 @@ function IELTSListeningPracticePage() {
           <div className="flex-1 md:w-[55%] flex flex-col bg-slate-50/50 overflow-hidden">
             <div className="p-6 border-b border-slate-100 bg-white/50 backdrop-blur shrink-0 flex items-center justify-between">
               <h2 className="text-sm font-black text-slate-800">QUESTIONS</h2>
-              
+
               <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-xl border border-slate-200">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1 hidden sm:inline">
                   Câu hỏi:
@@ -879,7 +865,13 @@ function IELTSListeningPracticePage() {
                   min="0"
                   max={duration}
                   value={currentTime}
-                  onChange={(e) => setCurrentTime(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setCurrentTime(val);
+                    if (audioRef.current) {
+                      audioRef.current.currentTime = val;
+                    }
+                  }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                 />
 
@@ -953,6 +945,15 @@ function IELTSListeningPracticePage() {
           </div>
         </div>
       )}
+      <audio
+        ref={audioRef}
+        src="https://learnenglish.britishcouncil.org/sites/podcasts/files/LE_listening_A1_A_voicemail_message.mp3"
+        onTimeUpdate={(e) => {
+          const audio = e.target as HTMLAudioElement;
+          setCurrentTime(Math.floor(audio.currentTime));
+        }}
+        onEnded={() => setIsPlaying(false)}
+      />
     </div>
   );
 }
