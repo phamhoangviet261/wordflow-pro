@@ -25,7 +25,12 @@ export function AppSidebar() {
     email: sessionUser?.email ?? "",
     plan: "Pro",
     initials: sessionUser?.name
-      ? sessionUser.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+      ? sessionUser.name
+          .split(" ")
+          .map((w) => w[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase()
       : "U",
     image: sessionUser?.image ?? null,
   };
@@ -64,11 +69,16 @@ export function AppSidebar() {
       <div ref={userMenuRef} className="relative p-3 border-t border-slate-100">
         {userMenuOpen && (
           <div className="absolute left-3 bottom-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2">
-            <div className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white p-4">
+            <div className="bg-linear-to-br from-purple-600 to-indigo-600 text-white p-4">
               <div className="flex items-center gap-3">
                 <div className="size-12 rounded-full bg-white/20 backdrop-blur text-white font-bold text-lg flex items-center justify-center overflow-hidden">
                   {user.image ? (
-                    <img src={user.image} alt={user.name} className="size-full object-cover" referrerPolicy="no-referrer" />
+                    <img
+                      src={user.image}
+                      alt={user.name}
+                      className="size-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
                   ) : (
                     user.initials
                   )}
@@ -111,12 +121,7 @@ export function AppSidebar() {
               />
               <Row icon={Settings} label="Cài đặt" onClick={() => toast.info("Mở cài đặt")} />
               <div className="my-1 border-t border-slate-100" />
-              <Row
-                icon={LogOut}
-                label="Đăng xuất"
-                tone="danger"
-                onClick={handleLogout}
-              />
+              <Row icon={LogOut} label="Đăng xuất" tone="danger" onClick={handleLogout} />
             </div>
           </div>
         )}
@@ -127,9 +132,14 @@ export function AppSidebar() {
           onClick={() => setUserMenuOpen((open) => !open)}
           className="w-full flex items-center gap-3 px-2 py-2 rounded-2xl hover:bg-slate-50 transition group"
         >
-          <div className="size-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold flex items-center justify-center shadow shrink-0 overflow-hidden">
+          <div className="size-10 rounded-full bg-linear-to-br from-purple-500 to-indigo-600 text-white font-bold flex items-center justify-center shadow shrink-0 overflow-hidden">
             {user.image ? (
-              <img src={user.image} alt={user.name} className="size-full object-cover" referrerPolicy="no-referrer" />
+              <img
+                src={user.image}
+                alt={user.name}
+                className="size-full object-cover"
+                referrerPolicy="no-referrer"
+              />
             ) : (
               user.initials
             )}

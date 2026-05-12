@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { vocabSets as seed, type VocabSet } from "./mock-data";
 
 let sets: VocabSet[] = seed.map((s, i) => ({
@@ -54,14 +55,18 @@ export function getAllSetTags(): string[] {
 }
 
 export function useVocabSets(): VocabSet[] {
-  return useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
+  const { data } = useQuery({
+    queryKey: ["vocab-sets"],
+    queryFn: async () => {
+      const res = await fetch("/api/vocab-sets");
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error.message);
+      return json.data as VocabSet[];
     },
-    () => sets,
-    () => sets,
-  );
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  return data ?? [];
 }
 
 export function getVocabSet(id: string): VocabSet | undefined {

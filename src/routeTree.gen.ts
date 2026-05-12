@@ -16,6 +16,7 @@ import { Route as AppVocabularyRouteImport } from './routes/_app.vocabulary'
 import { Route as AppStoreRouteImport } from './routes/_app.store'
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
+import { Route as ApiVocabSetsIndexRouteImport } from './routes/api/vocab-sets/index'
 import { Route as AppVocabSetsIndexRouteImport } from './routes/_app.vocab-sets.index'
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
@@ -57,6 +58,11 @@ const AppAdminRoute = AppAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiVocabSetsIndexRoute = ApiVocabSetsIndexRouteImport.update({
+  id: '/api/vocab-sets/',
+  path: '/api/vocab-sets/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppVocabSetsIndexRoute = AppVocabSetsIndexRouteImport.update({
   id: '/vocab-sets/',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/games/': typeof AppGamesIndexRoute
   '/vocab-sets/': typeof AppVocabSetsIndexRoute
+  '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/games': typeof AppGamesIndexRoute
   '/vocab-sets': typeof AppVocabSetsIndexRoute
+  '/api/vocab-sets': typeof ApiVocabSetsIndexRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
 }
 export interface FileRoutesById {
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/_app/games/': typeof AppGamesIndexRoute
   '/_app/vocab-sets/': typeof AppVocabSetsIndexRoute
+  '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
 }
 export interface FileRouteTypes {
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/api/auth/logout'
     | '/games/'
     | '/vocab-sets/'
+    | '/api/vocab-sets/'
     | '/api/auth/google/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/api/auth/logout'
     | '/games'
     | '/vocab-sets'
+    | '/api/vocab-sets'
     | '/api/auth/google/callback'
   id:
     | '__root__'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/api/auth/logout'
     | '/_app/games/'
     | '/_app/vocab-sets/'
+    | '/api/vocab-sets/'
     | '/api/auth/google/callback'
   fileRoutesById: FileRoutesById
 }
@@ -195,6 +207,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRouteWithChildren
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiVocabSetsIndexRoute: typeof ApiVocabSetsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin'
       preLoaderRoute: typeof AppAdminRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/vocab-sets/': {
+      id: '/api/vocab-sets/'
+      path: '/api/vocab-sets'
+      fullPath: '/api/vocab-sets/'
+      preLoaderRoute: typeof ApiVocabSetsIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/vocab-sets/': {
       id: '/_app/vocab-sets/'
@@ -343,6 +363,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ApiAuthGoogleRoute: ApiAuthGoogleRouteWithChildren,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiVocabSetsIndexRoute: ApiVocabSetsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
