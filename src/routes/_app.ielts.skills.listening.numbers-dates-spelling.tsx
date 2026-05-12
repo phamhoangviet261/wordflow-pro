@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useMemo } from "react";
 import { 
   IELTSModuleHero, 
   IELTSObjectivesCard, 
@@ -14,7 +15,13 @@ import {
   ChevronRight,
   BookOpen,
   MessageSquare,
-  Lock as LockIcon
+  Lock as LockIcon,
+  Play,
+  RotateCcw,
+  Check,
+  X,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +35,49 @@ export const Route = createFileRoute("/_app/ielts/skills/listening/numbers-dates
   component: NumbersDatesSpellingPage,
 });
 
+const QUESTIONS = [
+  { 
+    id: 1, 
+    label: "1. Phone number:", 
+    placeholder: "07982 ______", 
+    correctAnswer: "441236",
+    explanation: "Số điện thoại thường được đọc theo từng cụm. Hãy chú ý các con số lặp lại và nhịp nghỉ của người nói."
+  },
+  { 
+    id: 2, 
+    label: "2. Date of appointment:", 
+    placeholder: "______ April", 
+    correctAnswer: "15th",
+    explanation: "Ngày tháng có thể được đọc là “the fifteenth of April” hoặc “April the fifteenth”."
+  },
+  { 
+    id: 3, 
+    label: "3. Surname:", 
+    placeholder: "______", 
+    correctAnswer: "Henderson",
+    explanation: "Họ và tên riêng thường được đánh vần từng chữ cái trong IELTS Listening Part 1."
+  },
+  { 
+    id: 4, 
+    label: "4. Email:", 
+    placeholder: "martin.______@mail.com", 
+    correctAnswer: "green",
+    explanation: "Với email, hãy chú ý các từ như dot (dấu chấm), dash (dấu gạch ngang), underscore (gạch dưới) và spelling trước dấu @."
+  },
+  { 
+    id: 5, 
+    label: "5. Postcode:", 
+    placeholder: "______ 4QP", 
+    correctAnswer: "SW12",
+    explanation: "Mã bưu điện thường kết hợp cả chữ cái và con số, hãy viết chính xác thứ tự nghe được."
+  },
+];
+
 function NumbersDatesSpellingPage() {
+  const [userAnswers, setUserAnswers] = useState<string[]>(Array(5).fill(""));
+  const [showResults, setShowResults] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
+
   const objectives = [
     "Nghe và ghi đúng số điện thoại, giá tiền, giờ giấc.",
     "Nhận diện ngày tháng, năm và cách đọc ngày trong tiếng Anh.",
@@ -79,6 +128,25 @@ function NumbersDatesSpellingPage() {
     }
   ];
 
+  const score = useMemo(() => {
+    return userAnswers.reduce((acc, ans, idx) => {
+      const normalizedUser = ans.trim().toLowerCase();
+      const normalizedCorrect = QUESTIONS[idx].correctAnswer.toLowerCase();
+      return acc + (normalizedUser === normalizedCorrect ? 1 : 0);
+    }, 0);
+  }, [userAnswers, showResults]);
+
+  const handleCheckAnswers = () => {
+    setShowResults(true);
+  };
+
+  const handleReset = () => {
+    setUserAnswers(Array(5).fill(""));
+    setShowResults(false);
+  };
+
+  const isAnyFilled = userAnswers.some(ans => ans.trim().length > 0);
+
   return (
     <div className="max-w-6xl mx-auto space-y-12 py-8 px-4">
       {/* 1. Back navigation */}
@@ -97,7 +165,7 @@ function NumbersDatesSpellingPage() {
         level="Beginner"
         difficulty={1}
         estimatedTime="15-20 minutes"
-        progress={0}
+        progress={showResults ? Math.round((score / 5) * 100) : 0}
         accentColor="text-blue-600"
         bgLight="bg-blue-50"
       />
@@ -117,23 +185,68 @@ function NumbersDatesSpellingPage() {
             </div>
           </section>
 
-          {/* 5. Practice Preview */}
+          {/* 5. Practice Section */}
           <section className="space-y-8">
             <div className="flex items-center gap-3">
               <div className="h-8 w-1 bg-blue-500 rounded-full" />
-              <h2 className="text-2xl font-black text-slate-800 tracking-tight">Luyện tập mẫu</h2>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">Luyện tập</h2>
             </div>
+            
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 space-y-8">
-              {/* Audio Placeholder */}
-              <div className="bg-slate-50 rounded-2xl p-8 border border-dashed border-slate-200 flex flex-col items-center justify-center text-center space-y-3 group hover:border-blue-300 transition-colors">
-                <div className="size-16 rounded-full bg-white flex items-center justify-center text-slate-300 shadow-sm group-hover:text-blue-400 group-hover:scale-110 transition-all">
-                  <Volume2 className="size-8" />
+              {/* Mock Audio Player UI */}
+              <div className="bg-white rounded-3xl border border-slate-100 p-6 flex flex-col sm:flex-row items-center gap-6 shadow-sm">
+                <div className="size-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-200 cursor-pointer hover:scale-105 transition-transform">
+                  <Play className="size-8 fill-current" />
                 </div>
-                <div>
-                  <div className="text-sm font-bold text-slate-500">Audio Placeholder</div>
-                  <div className="text-[10px] font-medium text-slate-400">Audio luyện tập sẽ sớm được cập nhật</div>
+                <div className="flex-1 space-y-3 w-full">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-black text-slate-800">Audio luyện tập</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100">Mock audio</span>
+                        <span>01:30</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 w-1/3" />
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium italic">
+                    Audio thật sẽ được thêm sau. Hiện tại đây là phần mô phỏng giao diện luyện nghe.
+                  </p>
                 </div>
               </div>
+
+              {/* Result Summary */}
+              {showResults && (
+                <div className={cn(
+                  "p-6 rounded-3xl border animate-in fade-in slide-in-from-top-4 duration-500",
+                  score === 5 ? "bg-green-50 border-green-100 text-green-700" : 
+                  score >= 3 ? "bg-blue-50 border-blue-100 text-blue-700" : 
+                  "bg-orange-50 border-orange-100 text-orange-700"
+                )}>
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "size-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm",
+                      score === 5 ? "bg-green-500 text-white" : 
+                      score >= 3 ? "bg-blue-500 text-white" : 
+                      "bg-orange-500 text-white"
+                    )}>
+                      {score}/5
+                    </div>
+                    <div>
+                      <div className="text-lg font-black tracking-tight">
+                        {score === 5 ? "Tuyệt vời!" : score >= 3 ? "Khá lắm!" : "Cố gắng lên!"}
+                      </div>
+                      <p className="text-sm font-medium opacity-80">
+                        {score === 5 ? "Bạn đã nắm rất chắc dạng này." : 
+                         score >= 3 ? "Hãy review transcript để hiểu lỗi sai." : 
+                         "Dạng này cần luyện nghe nhiều lần để quen nhịp."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Questions */}
               <div className="space-y-6">
@@ -141,30 +254,153 @@ function NumbersDatesSpellingPage() {
                   Điền vào chỗ trống (Giới hạn: ONE WORD AND/OR A NUMBER)
                 </div>
                 <div className="space-y-4">
-                  {[
-                    { label: "1. Phone number:", placeholder: "07982 ______" },
-                    { label: "2. Date of appointment:", placeholder: "______ April" },
-                    { label: "3. Surname:", placeholder: "______" },
-                    { label: "4. Email:", placeholder: "martin.______@mail.com" },
-                    { label: "5. Postcode:", placeholder: "______ 4QP" },
-                  ].map((q, i) => (
-                    <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border border-slate-50 bg-white hover:border-blue-100 transition-colors">
-                      <span className="text-sm font-bold text-slate-700 min-w-[160px]">{q.label}</span>
-                      <input 
-                        type="text" 
-                        placeholder={q.placeholder}
-                        disabled
-                        className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none cursor-not-allowed"
-                      />
-                    </div>
-                  ))}
+                  {QUESTIONS.map((q, i) => {
+                    const isCorrect = userAnswers[i].trim().toLowerCase() === q.correctAnswer.toLowerCase();
+                    return (
+                      <div key={q.id} className="space-y-2">
+                        <div className={cn(
+                          "flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl border transition-all",
+                          !showResults ? "border-slate-50 bg-white hover:border-blue-100" : 
+                          isCorrect ? "border-green-100 bg-green-50/30" : "border-red-100 bg-red-50/30"
+                        )}>
+                          <span className="text-sm font-bold text-slate-700 min-w-[160px]">{q.label}</span>
+                          <div className="relative flex-1">
+                            <input 
+                              type="text" 
+                              value={userAnswers[i]}
+                              onChange={(e) => {
+                                const newAnswers = [...userAnswers];
+                                newAnswers[i] = e.target.value;
+                                setUserAnswers(newAnswers);
+                              }}
+                              placeholder={q.placeholder}
+                              readOnly={showResults}
+                              className={cn(
+                                "w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 transition-all",
+                                !showResults ? "focus:ring-blue-100 focus:border-blue-400" : 
+                                isCorrect ? "focus:ring-green-100 border-green-200" : "focus:ring-red-100 border-red-200"
+                              )}
+                            />
+                            {showResults && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                {isCorrect ? (
+                                  <CheckCircle2 className="size-5 text-green-500" />
+                                ) : (
+                                  <X className="size-5 text-red-500" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {showResults && !isCorrect && (
+                          <div className="px-4 text-[11px] font-bold text-red-500 flex items-center gap-2">
+                            <span>Đáp án đúng:</span> 
+                            <span className="bg-red-50 px-2 py-0.5 rounded border border-red-100 uppercase tracking-tight">{q.correctAnswer}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              <button disabled className="w-full py-4 rounded-2xl bg-slate-100 text-slate-400 font-black cursor-not-allowed transition-all">
-                KIỂM TRA ĐÁP ÁN
-              </button>
+              {!showResults ? (
+                <button 
+                  onClick={handleCheckAnswers}
+                  disabled={!isAnyFilled}
+                  className={cn(
+                    "w-full py-4 rounded-2xl font-black transition-all shadow-lg",
+                    isAnyFilled 
+                      ? "bg-blue-600 text-white shadow-blue-200 hover:scale-[1.01] active:scale-[0.99]" 
+                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  )}
+                >
+                  KIỂM TRA ĐÁP ÁN
+                </button>
+              ) : (
+                <button 
+                  onClick={handleReset}
+                  className="w-full py-4 rounded-2xl bg-slate-800 text-white font-black shadow-lg shadow-slate-200 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                >
+                  <RotateCcw className="size-5" /> LÀM LẠI
+                </button>
+              )}
             </div>
+
+            {/* Review Section */}
+            {showResults && (
+              <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-1 bg-blue-500 rounded-full" />
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                    <MessageSquare className="size-5 text-blue-600" /> Review đáp án
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {QUESTIONS.map((q, idx) => (
+                    <div key={q.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Câu {idx + 1}</span>
+                        {userAnswers[idx].trim().toLowerCase() === q.correctAnswer.toLowerCase() ? (
+                          <span className="text-[10px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full uppercase tracking-tighter border border-green-100">Chính xác</span>
+                        ) : (
+                          <span className="text-[10px] font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-full uppercase tracking-tighter border border-red-100">Chưa đúng</span>
+                        )}
+                      </div>
+                      <h4 className="font-bold text-slate-800 text-sm">{q.label.replace(':', '')}</h4>
+                      <p className="text-xs text-slate-500 leading-relaxed font-medium">{q.explanation}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Transcript Mock */}
+            <section className="space-y-4">
+              <button 
+                onClick={() => setShowTranscript(!showTranscript)}
+                className="flex items-center justify-between w-full p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm hover:border-blue-200 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <BookOpen className="size-5" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800">Transcript mẫu</h3>
+                </div>
+                {showTranscript ? <ChevronUp className="size-5 text-slate-400" /> : <ChevronDown className="size-5 text-slate-400" />}
+              </button>
+              
+              {showTranscript && (
+                <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="space-y-6 text-sm leading-relaxed text-slate-600 font-medium">
+                    <div className="space-y-2">
+                      <p><span className="font-bold text-slate-800">Receptionist:</span> Can I have your phone number, please?</p>
+                      <p><span className="font-bold text-slate-800">Student:</span> Yes, it’s <span className="bg-blue-100 text-blue-700 px-1 rounded font-black">07982 441236</span>.</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p><span className="font-bold text-slate-800">Receptionist:</span> And what date would you like to book the appointment?</p>
+                      <p><span className="font-bold text-slate-800">Student:</span> The <span className="bg-blue-100 text-blue-700 px-1 rounded font-black">15th</span> of April, if possible.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p><span className="font-bold text-slate-800">Receptionist:</span> Could you spell your surname?</p>
+                      <p><span className="font-bold text-slate-800">Student:</span> Sure. It’s <span className="bg-blue-100 text-blue-700 px-1 rounded font-black">Henderson</span>. H-E-N-D-E-R-S-O-N.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p><span className="font-bold text-slate-800">Receptionist:</span> And your email address?</p>
+                      <p><span className="font-bold text-slate-800">Student:</span> It’s martin.<span className="bg-blue-100 text-blue-700 px-1 rounded font-black">green</span>@mail.com.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p><span className="font-bold text-slate-800">Receptionist:</span> Finally, what’s your postcode?</p>
+                      <p><span className="font-bold text-slate-800">Student:</span> It’s <span className="bg-blue-100 text-blue-700 px-1 rounded font-black">SW12</span> 4QP.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
           </section>
 
           {/* 6. Common Mistakes */}
