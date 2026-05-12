@@ -27,7 +27,10 @@ export const Route = createFileRoute("/api/words/bulk")({
           let skipped = 0;
 
           for (const line of lines) {
-            const [word, meaning, typeRaw, example] = line.split("|").map((s) => s?.trim());
+            const parts = line.split("|").map((s) => s?.trim());
+            
+            // Format: word | phonetic | meaning | type | example
+            const [word, phonetic, meaning, typeRaw, example] = parts;
 
             if (!word || !meaning) {
               skipped++;
@@ -50,7 +53,7 @@ export const Route = createFileRoute("/api/words/bulk")({
                     word: word,
                     meaning: meaning,
                     type: type,
-                    phonetic: `/${word}/`,
+                    phonetic: phonetic || `/${word}/`,
                     example: example || null,
                   },
                 });

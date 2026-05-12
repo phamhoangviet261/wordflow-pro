@@ -342,19 +342,20 @@ function VocabularyPage() {
                 <Sparkles className="size-4" /> Thêm nhiều từ
               </button>
             </DialogTrigger>
-            <DialogContent className="rounded-2xl">
+            <DialogContent className="rounded-2xl sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Thêm nhiều từ</DialogTitle>
                 <DialogDescription>
-                  Mỗi dòng một từ theo định dạng: <code>word | nghĩa | TYPE | ví dụ</code>
+                  Mỗi dòng một từ theo định dạng:{" "}
+                  <code>word | phiên âm | nghĩa | TYPE | ví dụ</code>
                 </DialogDescription>
               </DialogHeader>
               <textarea
                 value={aiText}
                 onChange={(e) => setAiText(e.target.value)}
-                rows={8}
+                rows={12}
                 placeholder={
-                  "happy | hạnh phúc | ADJ | I am happy.\nrun | chạy | VERB | I run every morning."
+                  "happy | /ˈhæpi/ | hạnh phúc | ADJ | I am happy.\nrun | /rʌn/ | chạy | VERB | I run every morning."
                 }
                 className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-mono focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
               />
@@ -381,7 +382,7 @@ function VocabularyPage() {
                 <Plus className="size-4" /> Thêm từ mới
               </button>
             </DialogTrigger>
-            <DialogContent className="rounded-2xl">
+            <DialogContent className="rounded-2xl sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Thêm từ mới</DialogTitle>
                 <DialogDescription>
