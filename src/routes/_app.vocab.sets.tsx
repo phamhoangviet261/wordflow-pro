@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/vocab-sets/")({
+export const Route = createFileRoute("/_app/vocab/sets")({
   head: () => ({
     meta: [
       { title: "Bộ từ vựng — VocabLab" },
@@ -177,7 +177,7 @@ function VocabSetsPage() {
 
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
           <Link
-            to={s.id === "all" ? "/vocabulary" : "/vocab-sets/$setId"}
+            to={s.id === "all" ? "/vocab/list" : "/vocab/$setId"}
             params={s.id === "all" ? {} : { setId: s.id }}
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm px-4 py-1.5 rounded-xl shadow-sm transition"
           >

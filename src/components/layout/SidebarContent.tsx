@@ -4,8 +4,10 @@ import { cn } from "@/lib/utils";
 
 export const navItems = [
   { to: "/", label: "Trang chủ", icon: Home },
-  { to: "/vocab-sets", label: "Bộ từ vựng", icon: BookMarked },
-  { to: "/vocabulary", label: "Từ vựng", icon: BookOpen },
+  { to: "/vocab/sets", label: "Bộ từ vựng", icon: BookMarked },
+  { to: "/vocab/list", label: "Từ vựng", icon: BookOpen },
+  { to: "/ielts/road-map", label: "Lộ trình IELTS", icon: GraduationCap },
+  { to: "/ielts/skills", label: "Kỹ năng IELTS", icon: GraduationCap },
   { to: "/games", label: "Game phản xạ", icon: Gamepad2 },
   { to: "/store", label: "Phần thưởng", icon: Gift },
   { to: "/leaderboard", label: "Xếp hạng", icon: Trophy },

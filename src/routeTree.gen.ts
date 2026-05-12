@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
-import { Route as AppVocabularyRouteImport } from './routes/_app.vocabulary'
 import { Route as AppStoreRouteImport } from './routes/_app.store'
 import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
@@ -20,14 +19,17 @@ import { Route as ApiWordsIndexRouteImport } from './routes/api/words/index'
 import { Route as ApiVocabSetsIndexRouteImport } from './routes/api/vocab-sets/index'
 import { Route as ApiSessionsIndexRouteImport } from './routes/api/sessions/index'
 import { Route as ApiGamificationIndexRouteImport } from './routes/api/gamification/index'
-import { Route as AppVocabSetsIndexRouteImport } from './routes/_app.vocab-sets.index'
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
 import { Route as ApiWordsBulkRouteImport } from './routes/api/words/bulk'
 import { Route as ApiWordsWordIdRouteImport } from './routes/api/words/$wordId'
 import { Route as ApiVocabSetsSetIdRouteImport } from './routes/api/vocab-sets/$setId'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
-import { Route as AppVocabSetsSetIdRouteImport } from './routes/_app.vocab-sets.$setId'
+import { Route as AppVocabSetsRouteImport } from './routes/_app.vocab.sets'
+import { Route as AppVocabListRouteImport } from './routes/_app.vocab.list'
+import { Route as AppVocabSetIdRouteImport } from './routes/_app.vocab.$setId'
+import { Route as AppIeltsSkillsRouteImport } from './routes/_app.ielts.skills'
+import { Route as AppIeltsRoadMapRouteImport } from './routes/_app.ielts.road-map'
 import { Route as AppGamesFlashcardRouteImport } from './routes/_app.games.flashcard'
 import { Route as ApiSessionsSessionIdCompleteRouteImport } from './routes/api/sessions/$sessionId.complete'
 import { Route as ApiSessionsSessionIdAnswerRouteImport } from './routes/api/sessions/$sessionId.answer'
@@ -45,11 +47,6 @@ const AppRoute = AppRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppVocabularyRoute = AppVocabularyRouteImport.update({
-  id: '/vocabulary',
-  path: '/vocabulary',
   getParentRoute: () => AppRoute,
 } as any)
 const AppStoreRoute = AppStoreRouteImport.update({
@@ -87,11 +84,6 @@ const ApiGamificationIndexRoute = ApiGamificationIndexRouteImport.update({
   path: '/api/gamification/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppVocabSetsIndexRoute = AppVocabSetsIndexRouteImport.update({
-  id: '/vocab-sets/',
-  path: '/vocab-sets/',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppGamesIndexRoute = AppGamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
@@ -122,9 +114,29 @@ const ApiAuthGoogleRoute = ApiAuthGoogleRouteImport.update({
   path: '/api/auth/google',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppVocabSetsSetIdRoute = AppVocabSetsSetIdRouteImport.update({
-  id: '/vocab-sets/$setId',
-  path: '/vocab-sets/$setId',
+const AppVocabSetsRoute = AppVocabSetsRouteImport.update({
+  id: '/vocab/sets',
+  path: '/vocab/sets',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVocabListRoute = AppVocabListRouteImport.update({
+  id: '/vocab/list',
+  path: '/vocab/list',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVocabSetIdRoute = AppVocabSetIdRouteImport.update({
+  id: '/vocab/$setId',
+  path: '/vocab/$setId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIeltsSkillsRoute = AppIeltsSkillsRouteImport.update({
+  id: '/ielts/skills',
+  path: '/ielts/skills',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIeltsRoadMapRoute = AppIeltsRoadMapRouteImport.update({
+  id: '/ielts/road-map',
+  path: '/ielts/road-map',
   getParentRoute: () => AppRoute,
 } as any)
 const AppGamesFlashcardRoute = AppGamesFlashcardRouteImport.update({
@@ -156,16 +168,18 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AppAdminRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
-  '/vocabulary': typeof AppVocabularyRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
-  '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
+  '/ielts/road-map': typeof AppIeltsRoadMapRoute
+  '/ielts/skills': typeof AppIeltsSkillsRoute
+  '/vocab/$setId': typeof AppVocabSetIdRoute
+  '/vocab/list': typeof AppVocabListRoute
+  '/vocab/sets': typeof AppVocabSetsRoute
   '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/vocab-sets/$setId': typeof ApiVocabSetsSetIdRoute
   '/api/words/$wordId': typeof ApiWordsWordIdRoute
   '/api/words/bulk': typeof ApiWordsBulkRoute
   '/games/': typeof AppGamesIndexRoute
-  '/vocab-sets/': typeof AppVocabSetsIndexRoute
   '/api/gamification/': typeof ApiGamificationIndexRoute
   '/api/sessions/': typeof ApiSessionsIndexRoute
   '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
@@ -179,17 +193,19 @@ export interface FileRoutesByTo {
   '/admin': typeof AppAdminRoute
   '/leaderboard': typeof AppLeaderboardRoute
   '/store': typeof AppStoreRoute
-  '/vocabulary': typeof AppVocabularyRoute
   '/': typeof AppIndexRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
-  '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
+  '/ielts/road-map': typeof AppIeltsRoadMapRoute
+  '/ielts/skills': typeof AppIeltsSkillsRoute
+  '/vocab/$setId': typeof AppVocabSetIdRoute
+  '/vocab/list': typeof AppVocabListRoute
+  '/vocab/sets': typeof AppVocabSetsRoute
   '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/vocab-sets/$setId': typeof ApiVocabSetsSetIdRoute
   '/api/words/$wordId': typeof ApiWordsWordIdRoute
   '/api/words/bulk': typeof ApiWordsBulkRoute
   '/games': typeof AppGamesIndexRoute
-  '/vocab-sets': typeof AppVocabSetsIndexRoute
   '/api/gamification': typeof ApiGamificationIndexRoute
   '/api/sessions': typeof ApiSessionsIndexRoute
   '/api/vocab-sets': typeof ApiVocabSetsIndexRoute
@@ -205,17 +221,19 @@ export interface FileRoutesById {
   '/_app/admin': typeof AppAdminRoute
   '/_app/leaderboard': typeof AppLeaderboardRoute
   '/_app/store': typeof AppStoreRoute
-  '/_app/vocabulary': typeof AppVocabularyRoute
   '/_app/': typeof AppIndexRoute
   '/_app/games/flashcard': typeof AppGamesFlashcardRoute
-  '/_app/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
+  '/_app/ielts/road-map': typeof AppIeltsRoadMapRoute
+  '/_app/ielts/skills': typeof AppIeltsSkillsRoute
+  '/_app/vocab/$setId': typeof AppVocabSetIdRoute
+  '/_app/vocab/list': typeof AppVocabListRoute
+  '/_app/vocab/sets': typeof AppVocabSetsRoute
   '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/vocab-sets/$setId': typeof ApiVocabSetsSetIdRoute
   '/api/words/$wordId': typeof ApiWordsWordIdRoute
   '/api/words/bulk': typeof ApiWordsBulkRoute
   '/_app/games/': typeof AppGamesIndexRoute
-  '/_app/vocab-sets/': typeof AppVocabSetsIndexRoute
   '/api/gamification/': typeof ApiGamificationIndexRoute
   '/api/sessions/': typeof ApiSessionsIndexRoute
   '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
@@ -232,16 +250,18 @@ export interface FileRouteTypes {
     | '/admin'
     | '/leaderboard'
     | '/store'
-    | '/vocabulary'
     | '/games/flashcard'
-    | '/vocab-sets/$setId'
+    | '/ielts/road-map'
+    | '/ielts/skills'
+    | '/vocab/$setId'
+    | '/vocab/list'
+    | '/vocab/sets'
     | '/api/auth/google'
     | '/api/auth/logout'
     | '/api/vocab-sets/$setId'
     | '/api/words/$wordId'
     | '/api/words/bulk'
     | '/games/'
-    | '/vocab-sets/'
     | '/api/gamification/'
     | '/api/sessions/'
     | '/api/vocab-sets/'
@@ -255,17 +275,19 @@ export interface FileRouteTypes {
     | '/admin'
     | '/leaderboard'
     | '/store'
-    | '/vocabulary'
     | '/'
     | '/games/flashcard'
-    | '/vocab-sets/$setId'
+    | '/ielts/road-map'
+    | '/ielts/skills'
+    | '/vocab/$setId'
+    | '/vocab/list'
+    | '/vocab/sets'
     | '/api/auth/google'
     | '/api/auth/logout'
     | '/api/vocab-sets/$setId'
     | '/api/words/$wordId'
     | '/api/words/bulk'
     | '/games'
-    | '/vocab-sets'
     | '/api/gamification'
     | '/api/sessions'
     | '/api/vocab-sets'
@@ -280,17 +302,19 @@ export interface FileRouteTypes {
     | '/_app/admin'
     | '/_app/leaderboard'
     | '/_app/store'
-    | '/_app/vocabulary'
     | '/_app/'
     | '/_app/games/flashcard'
-    | '/_app/vocab-sets/$setId'
+    | '/_app/ielts/road-map'
+    | '/_app/ielts/skills'
+    | '/_app/vocab/$setId'
+    | '/_app/vocab/list'
+    | '/_app/vocab/sets'
     | '/api/auth/google'
     | '/api/auth/logout'
     | '/api/vocab-sets/$setId'
     | '/api/words/$wordId'
     | '/api/words/bulk'
     | '/_app/games/'
-    | '/_app/vocab-sets/'
     | '/api/gamification/'
     | '/api/sessions/'
     | '/api/vocab-sets/'
@@ -337,13 +361,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/vocabulary': {
-      id: '/_app/vocabulary'
-      path: '/vocabulary'
-      fullPath: '/vocabulary'
-      preLoaderRoute: typeof AppVocabularyRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/store': {
@@ -395,13 +412,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGamificationIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/vocab-sets/': {
-      id: '/_app/vocab-sets/'
-      path: '/vocab-sets'
-      fullPath: '/vocab-sets/'
-      preLoaderRoute: typeof AppVocabSetsIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/games/': {
       id: '/_app/games/'
       path: '/games'
@@ -444,11 +454,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthGoogleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/vocab-sets/$setId': {
-      id: '/_app/vocab-sets/$setId'
-      path: '/vocab-sets/$setId'
-      fullPath: '/vocab-sets/$setId'
-      preLoaderRoute: typeof AppVocabSetsSetIdRouteImport
+    '/_app/vocab/sets': {
+      id: '/_app/vocab/sets'
+      path: '/vocab/sets'
+      fullPath: '/vocab/sets'
+      preLoaderRoute: typeof AppVocabSetsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/vocab/list': {
+      id: '/_app/vocab/list'
+      path: '/vocab/list'
+      fullPath: '/vocab/list'
+      preLoaderRoute: typeof AppVocabListRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/vocab/$setId': {
+      id: '/_app/vocab/$setId'
+      path: '/vocab/$setId'
+      fullPath: '/vocab/$setId'
+      preLoaderRoute: typeof AppVocabSetIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ielts/skills': {
+      id: '/_app/ielts/skills'
+      path: '/ielts/skills'
+      fullPath: '/ielts/skills'
+      preLoaderRoute: typeof AppIeltsSkillsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ielts/road-map': {
+      id: '/_app/ielts/road-map'
+      path: '/ielts/road-map'
+      fullPath: '/ielts/road-map'
+      preLoaderRoute: typeof AppIeltsRoadMapRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/games/flashcard': {
@@ -486,24 +524,28 @@ interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRoute
   AppLeaderboardRoute: typeof AppLeaderboardRoute
   AppStoreRoute: typeof AppStoreRoute
-  AppVocabularyRoute: typeof AppVocabularyRoute
   AppIndexRoute: typeof AppIndexRoute
   AppGamesFlashcardRoute: typeof AppGamesFlashcardRoute
-  AppVocabSetsSetIdRoute: typeof AppVocabSetsSetIdRoute
+  AppIeltsRoadMapRoute: typeof AppIeltsRoadMapRoute
+  AppIeltsSkillsRoute: typeof AppIeltsSkillsRoute
+  AppVocabSetIdRoute: typeof AppVocabSetIdRoute
+  AppVocabListRoute: typeof AppVocabListRoute
+  AppVocabSetsRoute: typeof AppVocabSetsRoute
   AppGamesIndexRoute: typeof AppGamesIndexRoute
-  AppVocabSetsIndexRoute: typeof AppVocabSetsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAdminRoute: AppAdminRoute,
   AppLeaderboardRoute: AppLeaderboardRoute,
   AppStoreRoute: AppStoreRoute,
-  AppVocabularyRoute: AppVocabularyRoute,
   AppIndexRoute: AppIndexRoute,
   AppGamesFlashcardRoute: AppGamesFlashcardRoute,
-  AppVocabSetsSetIdRoute: AppVocabSetsSetIdRoute,
+  AppIeltsRoadMapRoute: AppIeltsRoadMapRoute,
+  AppIeltsSkillsRoute: AppIeltsSkillsRoute,
+  AppVocabSetIdRoute: AppVocabSetIdRoute,
+  AppVocabListRoute: AppVocabListRoute,
+  AppVocabSetsRoute: AppVocabSetsRoute,
   AppGamesIndexRoute: AppGamesIndexRoute,
-  AppVocabSetsIndexRoute: AppVocabSetsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

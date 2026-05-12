@@ -28,7 +28,7 @@ export function renderErrorPage(): string {
       <p>Đã có sự cố xảy ra ở phía máy chủ. Bạn có thể thử lại sau giây lát hoặc quay về danh sách bộ từ vựng.</p>
       <div class="actions">
         <button class="primary" onclick="location.reload()">Thử lại</button>
-        <a class="secondary" href="/vocab-sets">Bộ từ vựng</a>
+        <a class="secondary" href="/vocab/sets">Bộ từ vựng</a>
         <a class="secondary" href="/">Trang chủ</a>
       </div>
     </div>

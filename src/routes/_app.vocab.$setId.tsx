@@ -43,7 +43,7 @@ interface Word {
   learned: boolean;
 }
 
-export const Route = createFileRoute("/_app/vocab-sets/$setId")({
+export const Route = createFileRoute("/_app/vocab/$setId")({
   head: () => ({
     meta: [
       { title: "Chi tiết bộ từ — VocabLab" },
@@ -97,7 +97,7 @@ function SetNotFound({
       <p className="mt-3 text-slate-500">{description}</p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <Link
-          to="/vocab-sets"
+          to="/vocab/sets"
           className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-2xl shadow-md transition"
         >
           <ArrowLeft className="size-4" /> Về danh sách bộ từ
@@ -208,7 +208,7 @@ function SetDetailPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <Link
-        to="/vocab-sets"
+        to="/vocab/sets"
         className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800"
       >
         <ArrowLeft className="size-4" /> Tất cả bộ từ

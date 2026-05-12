@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import { words as initialWords } from "@/lib/mock-data";
 import type { Word } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/_app/vocabulary")({
+export const Route = createFileRoute("/_app/vocab/list")({
   head: () => ({
     meta: [
       { title: "Từ vựng — VocabLab" },
