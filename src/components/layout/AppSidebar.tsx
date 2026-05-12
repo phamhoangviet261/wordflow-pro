@@ -12,16 +12,31 @@ import {
 import { useGamification } from "@/lib/gamification-store";
 import { toast } from "sonner";
 import { SidebarContent } from "./SidebarContent";
+import { useAuth } from "@/hooks/useAuth";
 
 export function AppSidebar() {
   const g = useGamification();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const { user: sessionUser } = useAuth();
+
   const user = {
-    name: "Nguyễn Minh Anh",
-    email: "minhanh@vocablab.io",
+    name: sessionUser?.name ?? "Người dùng",
+    email: sessionUser?.email ?? "",
     plan: "Pro",
-    initials: "MA",
+    initials: sessionUser?.name
+      ? sessionUser.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+      : "U",
+    image: sessionUser?.image ?? null,
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/login";
+    } catch {
+      toast.error("Không thể đăng xuất. Vui lòng thử lại.");
+    }
   };
 
   useEffect(() => {
@@ -51,8 +66,12 @@ export function AppSidebar() {
           <div className="absolute left-3 bottom-[calc(100%+0.5rem)] z-50 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2">
             <div className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white p-4">
               <div className="flex items-center gap-3">
-                <div className="size-12 rounded-full bg-white/20 backdrop-blur text-white font-bold text-lg flex items-center justify-center">
-                  {user.initials}
+                <div className="size-12 rounded-full bg-white/20 backdrop-blur text-white font-bold text-lg flex items-center justify-center overflow-hidden">
+                  {user.image ? (
+                    <img src={user.image} alt={user.name} className="size-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    user.initials
+                  )}
                 </div>
                 <div className="min-w-0">
                   <div className="font-bold truncate">{user.name}</div>
@@ -96,7 +115,7 @@ export function AppSidebar() {
                 icon={LogOut}
                 label="Đăng xuất"
                 tone="danger"
-                onClick={() => toast.success("Đã đăng xuất (mô phỏng)")}
+                onClick={handleLogout}
               />
             </div>
           </div>
@@ -108,8 +127,12 @@ export function AppSidebar() {
           onClick={() => setUserMenuOpen((open) => !open)}
           className="w-full flex items-center gap-3 px-2 py-2 rounded-2xl hover:bg-slate-50 transition group"
         >
-          <div className="size-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold flex items-center justify-center shadow shrink-0">
-            {user.initials}
+          <div className="size-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold flex items-center justify-center shadow shrink-0 overflow-hidden">
+            {user.image ? (
+              <img src={user.image} alt={user.name} className="size-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              user.initials
+            )}
           </div>
           <div className="flex-1 text-left min-w-0">
             <div className="text-sm font-semibold text-slate-800 truncate">{user.name}</div>

@@ -1,28 +1,36 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { GraduationCap } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+const ERROR_MESSAGES: Record<string, string> = {
+  oauth_denied: "Đăng nhập bị từ chối. Vui lòng thử lại.",
+  missing_params: "Có lỗi xảy ra. Vui lòng thử lại.",
+  state_mismatch: "Yêu cầu không hợp lệ. Vui lòng thử lại.",
+  email_not_verified: "Email Google chưa được xác minh.",
+  server_error: "Lỗi máy chủ. Vui lòng thử lại sau.",
+};
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search) =>
+    search as { error?: string; redirect?: string },
   component: LoginPage,
 });
 
 function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const { error } = useSearch({ from: "/login" });
+
+  // Show error toast if redirected from OAuth with an error
+  useEffect(() => {
+    if (error && ERROR_MESSAGES[error]) {
+      toast.error(ERROR_MESSAGES[error]);
+    }
+  }, [error]);
 
   const handleGoogleLogin = () => {
     setIsLoading(true);
-    // In a real app, this would redirect to your auth provider
-    // window.location.href = "/api/auth/login/google";
-
-    // For demonstration, let's just log it
-    console.log("Redirecting to Google Login...");
-
-    // Simulate a bit of delay before redirect if it was a SPA transition
-    // but usually it's a direct location change
-    setTimeout(() => {
-      // Mocking the behavior for now
-      window.location.href = "/";
-    }, 800);
+    window.location.href = "/api/auth/google";
   };
 
   return (

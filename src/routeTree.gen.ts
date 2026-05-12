@@ -18,8 +18,11 @@ import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as AppVocabSetsIndexRouteImport } from './routes/_app.vocab-sets.index'
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
 import { Route as AppVocabSetsSetIdRouteImport } from './routes/_app.vocab-sets.$setId'
 import { Route as AppGamesFlashcardRouteImport } from './routes/_app.games.flashcard'
+import { Route as ApiAuthGoogleCallbackRouteImport } from './routes/api/auth/google/callback'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -65,6 +68,16 @@ const AppGamesIndexRoute = AppGamesIndexRouteImport.update({
   path: '/games/',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthGoogleRoute = ApiAuthGoogleRouteImport.update({
+  id: '/api/auth/google',
+  path: '/api/auth/google',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppVocabSetsSetIdRoute = AppVocabSetsSetIdRouteImport.update({
   id: '/vocab-sets/$setId',
   path: '/vocab-sets/$setId',
@@ -74,6 +87,11 @@ const AppGamesFlashcardRoute = AppGamesFlashcardRouteImport.update({
   id: '/games/flashcard',
   path: '/games/flashcard',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiAuthGoogleCallbackRoute = ApiAuthGoogleCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => ApiAuthGoogleRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -85,8 +103,11 @@ export interface FileRoutesByFullPath {
   '/vocabulary': typeof AppVocabularyRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
   '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
+  '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/games/': typeof AppGamesIndexRoute
   '/vocab-sets/': typeof AppVocabSetsIndexRoute
+  '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -97,8 +118,11 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
   '/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
+  '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/games': typeof AppGamesIndexRoute
   '/vocab-sets': typeof AppVocabSetsIndexRoute
+  '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -111,8 +135,11 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/games/flashcard': typeof AppGamesFlashcardRoute
   '/_app/vocab-sets/$setId': typeof AppVocabSetsSetIdRoute
+  '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/_app/games/': typeof AppGamesIndexRoute
   '/_app/vocab-sets/': typeof AppVocabSetsIndexRoute
+  '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -125,8 +152,11 @@ export interface FileRouteTypes {
     | '/vocabulary'
     | '/games/flashcard'
     | '/vocab-sets/$setId'
+    | '/api/auth/google'
+    | '/api/auth/logout'
     | '/games/'
     | '/vocab-sets/'
+    | '/api/auth/google/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -137,8 +167,11 @@ export interface FileRouteTypes {
     | '/'
     | '/games/flashcard'
     | '/vocab-sets/$setId'
+    | '/api/auth/google'
+    | '/api/auth/logout'
     | '/games'
     | '/vocab-sets'
+    | '/api/auth/google/callback'
   id:
     | '__root__'
     | '/_app'
@@ -150,13 +183,18 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_app/games/flashcard'
     | '/_app/vocab-sets/$setId'
+    | '/api/auth/google'
+    | '/api/auth/logout'
     | '/_app/games/'
     | '/_app/vocab-sets/'
+    | '/api/auth/google/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiAuthGoogleRoute: typeof ApiAuthGoogleRouteWithChildren
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -224,6 +262,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGamesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/google': {
+      id: '/api/auth/google'
+      path: '/api/auth/google'
+      fullPath: '/api/auth/google'
+      preLoaderRoute: typeof ApiAuthGoogleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/vocab-sets/$setId': {
       id: '/_app/vocab-sets/$setId'
       path: '/vocab-sets/$setId'
@@ -237,6 +289,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/games/flashcard'
       preLoaderRoute: typeof AppGamesFlashcardRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/auth/google/callback': {
+      id: '/api/auth/google/callback'
+      path: '/callback'
+      fullPath: '/api/auth/google/callback'
+      preLoaderRoute: typeof ApiAuthGoogleCallbackRouteImport
+      parentRoute: typeof ApiAuthGoogleRoute
     }
   }
 }
@@ -267,9 +326,23 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface ApiAuthGoogleRouteChildren {
+  ApiAuthGoogleCallbackRoute: typeof ApiAuthGoogleCallbackRoute
+}
+
+const ApiAuthGoogleRouteChildren: ApiAuthGoogleRouteChildren = {
+  ApiAuthGoogleCallbackRoute: ApiAuthGoogleCallbackRoute,
+}
+
+const ApiAuthGoogleRouteWithChildren = ApiAuthGoogleRoute._addFileChildren(
+  ApiAuthGoogleRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiAuthGoogleRoute: ApiAuthGoogleRouteWithChildren,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

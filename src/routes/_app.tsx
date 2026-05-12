@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -7,8 +7,19 @@ import { MobileSidebar } from "@/components/layout/MobileSidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { FloatingFeedback } from "@/components/gamification/FloatingFeedback";
 import { LevelUpModal } from "@/components/gamification/LevelUpModal";
+import { getSessionUser } from "@/lib/auth/auth-fns";
 
 export const Route = createFileRoute("/_app")({
+  beforeLoad: async ({ location }) => {
+    const user = await getSessionUser();
+    if (!user) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
+    return { user };
+  },
   component: AppLayout,
 });
 
