@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -25,6 +25,19 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  
+  // Check if we are in IELTS practice mode
+  const isPracticeMode = location.pathname.includes("/ielts/skills/listening/practice");
+
+  if (isPracticeMode) {
+    return (
+      <div className="flex min-h-screen w-full bg-white">
+        <Outlet />
+        <Toaster richColors position="top-right" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-slate-50 text-slate-800">

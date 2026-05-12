@@ -36,6 +36,7 @@ import { Route as ApiSessionsSessionIdAnswerRouteImport } from './routes/api/ses
 import { Route as ApiAuthGoogleCallbackRouteImport } from './routes/api/auth/google/callback'
 import { Route as AppIeltsSkillsSkillnameRouteImport } from './routes/_app.ielts.skills.$skillname'
 import { Route as AppIeltsSkillsListeningIndexRouteImport } from './routes/_app.ielts.skills.listening.index'
+import { Route as AppIeltsSkillsListeningPracticeRouteImport } from './routes/_app.ielts.skills.listening.practice'
 import { Route as AppIeltsSkillsListeningNumbersDatesSpellingRouteImport } from './routes/_app.ielts.skills.listening.numbers-dates-spelling'
 
 const LoginRoute = LoginRouteImport.update({
@@ -175,6 +176,12 @@ const AppIeltsSkillsListeningIndexRoute =
     path: '/ielts/skills/listening/',
     getParentRoute: () => AppRoute,
   } as any)
+const AppIeltsSkillsListeningPracticeRoute =
+  AppIeltsSkillsListeningPracticeRouteImport.update({
+    id: '/ielts/skills/listening/practice',
+    path: '/ielts/skills/listening/practice',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppIeltsSkillsListeningNumbersDatesSpellingRoute =
   AppIeltsSkillsListeningNumbersDatesSpellingRouteImport.update({
     id: '/ielts/skills/listening/numbers-dates-spelling',
@@ -209,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/api/sessions/$sessionId/complete': typeof ApiSessionsSessionIdCompleteRoute
   '/ielts/skills/': typeof AppIeltsSkillsIndexRoute
   '/ielts/skills/listening/numbers-dates-spelling': typeof AppIeltsSkillsListeningNumbersDatesSpellingRoute
+  '/ielts/skills/listening/practice': typeof AppIeltsSkillsListeningPracticeRoute
   '/ielts/skills/listening/': typeof AppIeltsSkillsListeningIndexRoute
 }
 export interface FileRoutesByTo {
@@ -238,6 +246,7 @@ export interface FileRoutesByTo {
   '/api/sessions/$sessionId/complete': typeof ApiSessionsSessionIdCompleteRoute
   '/ielts/skills': typeof AppIeltsSkillsIndexRoute
   '/ielts/skills/listening/numbers-dates-spelling': typeof AppIeltsSkillsListeningNumbersDatesSpellingRoute
+  '/ielts/skills/listening/practice': typeof AppIeltsSkillsListeningPracticeRoute
   '/ielts/skills/listening': typeof AppIeltsSkillsListeningIndexRoute
 }
 export interface FileRoutesById {
@@ -269,6 +278,7 @@ export interface FileRoutesById {
   '/api/sessions/$sessionId/complete': typeof ApiSessionsSessionIdCompleteRoute
   '/_app/ielts/skills/': typeof AppIeltsSkillsIndexRoute
   '/_app/ielts/skills/listening/numbers-dates-spelling': typeof AppIeltsSkillsListeningNumbersDatesSpellingRoute
+  '/_app/ielts/skills/listening/practice': typeof AppIeltsSkillsListeningPracticeRoute
   '/_app/ielts/skills/listening/': typeof AppIeltsSkillsListeningIndexRoute
 }
 export interface FileRouteTypes {
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/api/sessions/$sessionId/complete'
     | '/ielts/skills/'
     | '/ielts/skills/listening/numbers-dates-spelling'
+    | '/ielts/skills/listening/practice'
     | '/ielts/skills/listening/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/api/sessions/$sessionId/complete'
     | '/ielts/skills'
     | '/ielts/skills/listening/numbers-dates-spelling'
+    | '/ielts/skills/listening/practice'
     | '/ielts/skills/listening'
   id:
     | '__root__'
@@ -359,6 +371,7 @@ export interface FileRouteTypes {
     | '/api/sessions/$sessionId/complete'
     | '/_app/ielts/skills/'
     | '/_app/ielts/skills/listening/numbers-dates-spelling'
+    | '/_app/ielts/skills/listening/practice'
     | '/_app/ielts/skills/listening/'
   fileRoutesById: FileRoutesById
 }
@@ -569,6 +582,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIeltsSkillsListeningIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/ielts/skills/listening/practice': {
+      id: '/_app/ielts/skills/listening/practice'
+      path: '/ielts/skills/listening/practice'
+      fullPath: '/ielts/skills/listening/practice'
+      preLoaderRoute: typeof AppIeltsSkillsListeningPracticeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/ielts/skills/listening/numbers-dates-spelling': {
       id: '/_app/ielts/skills/listening/numbers-dates-spelling'
       path: '/ielts/skills/listening/numbers-dates-spelling'
@@ -593,6 +613,7 @@ interface AppRouteChildren {
   AppIeltsSkillsSkillnameRoute: typeof AppIeltsSkillsSkillnameRoute
   AppIeltsSkillsIndexRoute: typeof AppIeltsSkillsIndexRoute
   AppIeltsSkillsListeningNumbersDatesSpellingRoute: typeof AppIeltsSkillsListeningNumbersDatesSpellingRoute
+  AppIeltsSkillsListeningPracticeRoute: typeof AppIeltsSkillsListeningPracticeRoute
   AppIeltsSkillsListeningIndexRoute: typeof AppIeltsSkillsListeningIndexRoute
 }
 
@@ -611,6 +632,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIeltsSkillsIndexRoute: AppIeltsSkillsIndexRoute,
   AppIeltsSkillsListeningNumbersDatesSpellingRoute:
     AppIeltsSkillsListeningNumbersDatesSpellingRoute,
+  AppIeltsSkillsListeningPracticeRoute: AppIeltsSkillsListeningPracticeRoute,
   AppIeltsSkillsListeningIndexRoute: AppIeltsSkillsListeningIndexRoute,
 }
 

@@ -168,6 +168,7 @@ function NumbersDatesSpellingPage() {
         progress={showResults ? Math.round((score / 5) * 100) : 0}
         accentColor="text-blue-600"
         bgLight="bg-blue-50"
+        startTo="/ielts/skills/listening/practice"
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">

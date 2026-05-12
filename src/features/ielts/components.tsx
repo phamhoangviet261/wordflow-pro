@@ -253,6 +253,7 @@ export function IELTSModuleHero({
   progress,
   accentColor,
   bgLight,
+  startTo,
 }: {
   title: string;
   description: string;
@@ -263,6 +264,7 @@ export function IELTSModuleHero({
   progress: number;
   accentColor: string;
   bgLight: string;
+  startTo?: string;
 }) {
   return (
     <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-100 shadow-sm flex flex-col lg:flex-row gap-10 items-center overflow-hidden relative">
@@ -307,9 +309,12 @@ export function IELTSModuleHero({
       </div>
 
       <div className="shrink-0 flex flex-col gap-3 relative z-10 lg:min-w-[240px]">
-        <button className="w-full py-4 rounded-2xl bg-blue-600 text-white font-black shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-[0.98] transition-all">
+        <Link
+          to={startTo || "#"}
+          className="w-full py-4 rounded-2xl bg-blue-600 text-white font-black shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-[0.98] transition-all text-center block"
+        >
           BẮT ĐẦU HỌC
-        </button>
+        </Link>
         <button className="w-full py-3 rounded-2xl bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 transition-colors text-sm">
           XEM BÀI LUYỆN TẬP
         </button>
