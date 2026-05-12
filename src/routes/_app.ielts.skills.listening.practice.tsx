@@ -187,6 +187,15 @@ function IELTSListeningPracticePage() {
   const [selectedColor, setSelectedColor] = useState(HIGHLIGHT_COLORS[0]);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(45);
+  const duration = 155; // 02:35
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
   const navigate = useNavigate();
 
   const isTranscriptVisible = isSubmitted || isTranscriptManualUnlocked;
@@ -858,30 +867,35 @@ function IELTSListeningPracticePage() {
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col gap-1">
+            <div className="flex-1 flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <span>00:45</span>
-                <span>01:30</span>
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(duration)}</span>
               </div>
-              <div className="flex-1 relative h-1.5 bg-slate-100 rounded-full overflow-visible">
-                <div className="h-full bg-blue-500 rounded-full w-1/3 relative">
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 size-3 bg-white border-2 border-blue-500 rounded-full shadow-md" />
+              <div className="relative group flex items-center h-4">
+                {/* Real hidden range for interaction */}
+                <input
+                  type="range"
+                  min="0"
+                  max={duration}
+                  value={currentTime}
+                  onChange={(e) => setCurrentTime(parseInt(e.target.value))}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                />
+
+                {/* Styled Track */}
+                <div className="absolute inset-x-0 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-75"
+                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                  />
                 </div>
 
-                {/* Audio Markers */}
-                {QUESTIONS.map((q) => (
-                  <div
-                    key={q.id}
-                    className="absolute top-1/2 -translate-y-1/2 group cursor-pointer"
-                    style={{ left: `${(q.timestamp / 90) * 100}%` }}
-                    title={`Câu hỏi ${q.id}`}
-                  >
-                    <div className="size-2 rounded-full bg-slate-300 border border-white group-hover:bg-blue-400 group-hover:scale-150 transition-all shadow-sm" />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-1.5 py-0.5 bg-slate-800 text-white text-[8px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      Q{q.id}
-                    </div>
-                  </div>
-                ))}
+                {/* Thumb */}
+                <div
+                  className="absolute size-3.5 bg-white border-2 border-blue-500 rounded-full shadow-md z-10 pointer-events-none transition-all duration-75 group-hover:scale-125"
+                  style={{ left: `calc(${(currentTime / duration) * 100}% - 7px)` }}
+                />
               </div>
             </div>
 
