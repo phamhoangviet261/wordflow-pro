@@ -28,7 +28,7 @@ function parseCookies(cookieHeader: string): Record<string, string> {
     cookieHeader.split(";").map((c) => {
       const idx = c.indexOf("=");
       return [c.slice(0, idx).trim(), c.slice(idx + 1).trim()];
-    })
+    }),
   );
 }
 
@@ -36,23 +36,15 @@ export const Route = createFileRoute("/api/auth/google/callback")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        console.log("[AUTH_CALLBACK] Started handler");
         const url = new URL(request.url);
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
         const error = url.searchParams.get("error");
 
-        console.log("[AUTH_CALLBACK] Params:", { 
-          hasCode: !!code, 
-          hasState: !!state, 
-          error 
-        });
-
         const baseUrl = getBaseUrl();
 
         // --- Error from Google ---
         if (error) {
-          console.error("[AUTH_CALLBACK] Google OAuth error:", error);
           return new Response(null, {
             status: 302,
             headers: { Location: `${baseUrl}/login?error=oauth_denied` },
@@ -60,7 +52,6 @@ export const Route = createFileRoute("/api/auth/google/callback")({
         }
 
         if (!code || !state) {
-          console.error("[AUTH_CALLBACK] Missing code or state");
           return new Response(null, {
             status: 302,
             headers: { Location: `${baseUrl}/login?error=missing_params` },
@@ -68,18 +59,11 @@ export const Route = createFileRoute("/api/auth/google/callback")({
         }
 
         // --- CSRF state check ---
-        console.log("[AUTH_CALLBACK] Checking CSRF state");
         const cookieHeader = request.headers.get("cookie") ?? "";
         const cookies = parseCookies(cookieHeader);
         const savedState = cookies["oauth_state"];
 
-        console.log("[AUTH_CALLBACK] CSRF check:", {
-          savedState: savedState ? "exists" : "missing",
-          stateMatch: savedState === state
-        });
-
         if (!savedState || savedState !== state) {
-          console.error("[AUTH_CALLBACK] OAuth state mismatch — potential CSRF");
           return new Response(null, {
             status: 302,
             headers: { Location: `${baseUrl}/login?error=state_mismatch` },
@@ -88,20 +72,12 @@ export const Route = createFileRoute("/api/auth/google/callback")({
 
         try {
           // --- Exchange code for tokens ---
-          console.log("[AUTH_CALLBACK] Exchanging code for tokens");
           const tokens = await exchangeCodeForTokens(code);
-          console.log("[AUTH_CALLBACK] Tokens received successfully");
 
           // --- Fetch Google user info ---
-          console.log("[AUTH_CALLBACK] Fetching user info from Google");
           const googleUser = await fetchGoogleUserInfo(tokens.access_token);
-          console.log("[AUTH_CALLBACK] Google user info fetched:", { 
-            email: googleUser.email,
-            verified: googleUser.email_verified 
-          });
 
           if (!googleUser.email_verified) {
-            console.warn("[AUTH_CALLBACK] Email not verified");
             return new Response(null, {
               status: 302,
               headers: {
@@ -111,7 +87,6 @@ export const Route = createFileRoute("/api/auth/google/callback")({
           }
 
           // --- Upsert user in DB ---
-          console.log("[AUTH_CALLBACK] Upserting user in DB:", googleUser.email);
           const user = await db.user.upsert({
             where: { email: googleUser.email },
             update: {
@@ -125,10 +100,8 @@ export const Route = createFileRoute("/api/auth/google/callback")({
               emailVerified: new Date(),
             },
           });
-          console.log("[AUTH_CALLBACK] User upserted, ID:", user.id);
 
           // --- Upsert OAuth account record ---
-          console.log("[AUTH_CALLBACK] Upserting OAuth account record");
           await db.account.upsert({
             where: {
               provider_providerAccountId: {
@@ -158,10 +131,8 @@ export const Route = createFileRoute("/api/auth/google/callback")({
               id_token: tokens.id_token,
             },
           });
-          console.log("[AUTH_CALLBACK] Account record upserted");
 
           // --- Create sealed session ---
-          console.log("[AUTH_CALLBACK] Creating/Updating session");
           const session = await useSession<{
             user?: { userId: string; email: string; name: string | null; image: string | null };
           }>(getSessionConfig());
@@ -174,16 +145,13 @@ export const Route = createFileRoute("/api/auth/google/callback")({
               image: user.image ?? null,
             },
           });
-          console.log("[AUTH_CALLBACK] Session updated successfully");
 
           // Clear state cookie and redirect home
-          console.log("[AUTH_CALLBACK] Redirecting to home");
           return new Response(null, {
             status: 302,
             headers: {
               Location: `${baseUrl}/`,
-              "Set-Cookie":
-                "oauth_state=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
+              "Set-Cookie": "oauth_state=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
             },
           });
         } catch (err) {
