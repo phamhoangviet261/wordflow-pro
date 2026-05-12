@@ -132,6 +132,58 @@ export const Route = createFileRoute("/api/auth/google/callback")({
             },
           });
 
+          // --- Initialize Gamification & Quests ---
+          // 1. Ensure Gamification record exists
+          await db.gamification.upsert({
+            where: { userId: user.id },
+            update: {},
+            create: {
+              userId: user.id,
+              streak: 0,
+              bestStreak: 0,
+            },
+          });
+
+          // 2. Assign initial quests (if any templates exist)
+          const templates = await db.questTemplate.findMany({
+            where: { isActive: true },
+          });
+
+          if (templates.length > 0) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            for (const template of templates) {
+              await db.userQuest.upsert({
+                where: {
+                  userId_templateId_assignedDate: {
+                    userId: user.id,
+                    templateId: template.id,
+                    assignedDate: today,
+                  },
+                },
+                update: {},
+                create: {
+                  userId: user.id,
+                  templateId: template.id,
+                  assignedDate: today,
+                  progress: 0,
+                  completed: false,
+                  claimed: false,
+                },
+              });
+            }
+          }
+
+          // 3. Record Login
+          await db.userLogin.create({
+            data: {
+              userId: user.id,
+              ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("cf-connecting-ip") || null,
+              userAgent: request.headers.get("user-agent") || null,
+            },
+          });
+
           // --- Create sealed session ---
           const session = await useSession<{
             user?: { userId: string; email: string; name: string | null; image: string | null };
