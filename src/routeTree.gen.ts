@@ -18,6 +18,7 @@ import { Route as AppLeaderboardRouteImport } from './routes/_app.leaderboard'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as ApiWordsIndexRouteImport } from './routes/api/words/index'
 import { Route as ApiVocabSetsIndexRouteImport } from './routes/api/vocab-sets/index'
+import { Route as ApiSessionsIndexRouteImport } from './routes/api/sessions/index'
 import { Route as ApiGamificationIndexRouteImport } from './routes/api/gamification/index'
 import { Route as AppVocabSetsIndexRouteImport } from './routes/_app.vocab-sets.index'
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
@@ -28,6 +29,8 @@ import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
 import { Route as AppVocabSetsSetIdRouteImport } from './routes/_app.vocab-sets.$setId'
 import { Route as AppGamesFlashcardRouteImport } from './routes/_app.games.flashcard'
+import { Route as ApiSessionsSessionIdCompleteRouteImport } from './routes/api/sessions/$sessionId.complete'
+import { Route as ApiSessionsSessionIdAnswerRouteImport } from './routes/api/sessions/$sessionId.answer'
 import { Route as ApiAuthGoogleCallbackRouteImport } from './routes/api/auth/google/callback'
 
 const LoginRoute = LoginRouteImport.update({
@@ -72,6 +75,11 @@ const ApiWordsIndexRoute = ApiWordsIndexRouteImport.update({
 const ApiVocabSetsIndexRoute = ApiVocabSetsIndexRouteImport.update({
   id: '/api/vocab-sets/',
   path: '/api/vocab-sets/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSessionsIndexRoute = ApiSessionsIndexRouteImport.update({
+  id: '/api/sessions/',
+  path: '/api/sessions/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiGamificationIndexRoute = ApiGamificationIndexRouteImport.update({
@@ -124,6 +132,18 @@ const AppGamesFlashcardRoute = AppGamesFlashcardRouteImport.update({
   path: '/games/flashcard',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiSessionsSessionIdCompleteRoute =
+  ApiSessionsSessionIdCompleteRouteImport.update({
+    id: '/api/sessions/$sessionId/complete',
+    path: '/api/sessions/$sessionId/complete',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiSessionsSessionIdAnswerRoute =
+  ApiSessionsSessionIdAnswerRouteImport.update({
+    id: '/api/sessions/$sessionId/answer',
+    path: '/api/sessions/$sessionId/answer',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAuthGoogleCallbackRoute = ApiAuthGoogleCallbackRouteImport.update({
   id: '/callback',
   path: '/callback',
@@ -147,9 +167,12 @@ export interface FileRoutesByFullPath {
   '/games/': typeof AppGamesIndexRoute
   '/vocab-sets/': typeof AppVocabSetsIndexRoute
   '/api/gamification/': typeof ApiGamificationIndexRoute
+  '/api/sessions/': typeof ApiSessionsIndexRoute
   '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
   '/api/words/': typeof ApiWordsIndexRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
+  '/api/sessions/$sessionId/answer': typeof ApiSessionsSessionIdAnswerRoute
+  '/api/sessions/$sessionId/complete': typeof ApiSessionsSessionIdCompleteRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -168,9 +191,12 @@ export interface FileRoutesByTo {
   '/games': typeof AppGamesIndexRoute
   '/vocab-sets': typeof AppVocabSetsIndexRoute
   '/api/gamification': typeof ApiGamificationIndexRoute
+  '/api/sessions': typeof ApiSessionsIndexRoute
   '/api/vocab-sets': typeof ApiVocabSetsIndexRoute
   '/api/words': typeof ApiWordsIndexRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
+  '/api/sessions/$sessionId/answer': typeof ApiSessionsSessionIdAnswerRoute
+  '/api/sessions/$sessionId/complete': typeof ApiSessionsSessionIdCompleteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -191,9 +217,12 @@ export interface FileRoutesById {
   '/_app/games/': typeof AppGamesIndexRoute
   '/_app/vocab-sets/': typeof AppVocabSetsIndexRoute
   '/api/gamification/': typeof ApiGamificationIndexRoute
+  '/api/sessions/': typeof ApiSessionsIndexRoute
   '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
   '/api/words/': typeof ApiWordsIndexRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
+  '/api/sessions/$sessionId/answer': typeof ApiSessionsSessionIdAnswerRoute
+  '/api/sessions/$sessionId/complete': typeof ApiSessionsSessionIdCompleteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -214,9 +243,12 @@ export interface FileRouteTypes {
     | '/games/'
     | '/vocab-sets/'
     | '/api/gamification/'
+    | '/api/sessions/'
     | '/api/vocab-sets/'
     | '/api/words/'
     | '/api/auth/google/callback'
+    | '/api/sessions/$sessionId/answer'
+    | '/api/sessions/$sessionId/complete'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -235,9 +267,12 @@ export interface FileRouteTypes {
     | '/games'
     | '/vocab-sets'
     | '/api/gamification'
+    | '/api/sessions'
     | '/api/vocab-sets'
     | '/api/words'
     | '/api/auth/google/callback'
+    | '/api/sessions/$sessionId/answer'
+    | '/api/sessions/$sessionId/complete'
   id:
     | '__root__'
     | '/_app'
@@ -257,9 +292,12 @@ export interface FileRouteTypes {
     | '/_app/games/'
     | '/_app/vocab-sets/'
     | '/api/gamification/'
+    | '/api/sessions/'
     | '/api/vocab-sets/'
     | '/api/words/'
     | '/api/auth/google/callback'
+    | '/api/sessions/$sessionId/answer'
+    | '/api/sessions/$sessionId/complete'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -271,8 +309,11 @@ export interface RootRouteChildren {
   ApiWordsWordIdRoute: typeof ApiWordsWordIdRoute
   ApiWordsBulkRoute: typeof ApiWordsBulkRoute
   ApiGamificationIndexRoute: typeof ApiGamificationIndexRoute
+  ApiSessionsIndexRoute: typeof ApiSessionsIndexRoute
   ApiVocabSetsIndexRoute: typeof ApiVocabSetsIndexRoute
   ApiWordsIndexRoute: typeof ApiWordsIndexRoute
+  ApiSessionsSessionIdAnswerRoute: typeof ApiSessionsSessionIdAnswerRoute
+  ApiSessionsSessionIdCompleteRoute: typeof ApiSessionsSessionIdCompleteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -338,6 +379,13 @@ declare module '@tanstack/react-router' {
       path: '/api/vocab-sets'
       fullPath: '/api/vocab-sets/'
       preLoaderRoute: typeof ApiVocabSetsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sessions/': {
+      id: '/api/sessions/'
+      path: '/api/sessions'
+      fullPath: '/api/sessions/'
+      preLoaderRoute: typeof ApiSessionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/gamification/': {
@@ -410,6 +458,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGamesFlashcardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/sessions/$sessionId/complete': {
+      id: '/api/sessions/$sessionId/complete'
+      path: '/api/sessions/$sessionId/complete'
+      fullPath: '/api/sessions/$sessionId/complete'
+      preLoaderRoute: typeof ApiSessionsSessionIdCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sessions/$sessionId/answer': {
+      id: '/api/sessions/$sessionId/answer'
+      path: '/api/sessions/$sessionId/answer'
+      fullPath: '/api/sessions/$sessionId/answer'
+      preLoaderRoute: typeof ApiSessionsSessionIdAnswerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/google/callback': {
       id: '/api/auth/google/callback'
       path: '/callback'
@@ -467,8 +529,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWordsWordIdRoute: ApiWordsWordIdRoute,
   ApiWordsBulkRoute: ApiWordsBulkRoute,
   ApiGamificationIndexRoute: ApiGamificationIndexRoute,
+  ApiSessionsIndexRoute: ApiSessionsIndexRoute,
   ApiVocabSetsIndexRoute: ApiVocabSetsIndexRoute,
   ApiWordsIndexRoute: ApiWordsIndexRoute,
+  ApiSessionsSessionIdAnswerRoute: ApiSessionsSessionIdAnswerRoute,
+  ApiSessionsSessionIdCompleteRoute: ApiSessionsSessionIdCompleteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

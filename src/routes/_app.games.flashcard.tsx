@@ -34,30 +34,40 @@ function FlashcardGame() {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [sessionResult, setSessionResult] = useState<SessionResult | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
-  const { data: wordsResponse, isLoading, isError } = useQuery({
-    queryKey: ["flashcard-words", setId],
+  const { data: sessionData, isLoading, isError } = useQuery({
+    queryKey: ["flashcard-session", setId],
     queryFn: async () => {
-      const url = setId === "all" ? "/api/words?pageSize=20" : `/api/vocab-sets/${setId}`;
-      const res = await fetch(url);
+      const res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gameMode: "flashcard",
+          vocabSetId: setId === "all" ? null : setId,
+          wordCount: 10,
+        }),
+      });
       if (!res.ok) {
         const errorJson = await res.json().catch(() => ({}));
         throw new Error(errorJson.error?.message || `Server error: ${res.status}`);
       }
       const json = await res.json();
-      if (!json.ok) throw new Error(json.error?.message || "Failed to fetch data");
-      return setId === "all" ? json.data.items : json.data.words;
+      if (!json.ok) throw new Error(json.error?.message || "Failed to start session");
+      return json.data; // { sessionId, words, ... }
     },
+    // Don't refetch on window focus as it would reset the game
+    refetchOnWindowFocus: false,
   });
 
-  const deck = wordsResponse || [];
+  useEffect(() => {
+    if (sessionData?.sessionId) {
+      setSessionId(sessionData.sessionId);
+    }
+  }, [sessionData]);
+
+  const deck = sessionData?.words || [];
   const [results, setResults] = useState<(boolean | undefined)[]>([]);
-  const total = deck.length;
-  const current = deck[index];
-  const answered = results.filter((r) => r !== undefined).length;
-  const correct = results.filter((r) => r === true).length;
-  const progress = total > 0 ? Math.round((answered / total) * 100) : 0;
-  const finished = total > 0 && answered === total;
 
   useEffect(() => {
     if (deck.length > 0) {
@@ -65,22 +75,38 @@ function FlashcardGame() {
     }
   }, [deck]);
 
+  const total = deck.length;
+  const current = deck[index];
+  const answered = results.filter((r) => r !== undefined).length;
+  const correct = results.filter((r) => r === true).length;
+  const progress = total > 0 ? Math.round((answered / total) * 100) : 0;
+  const finished = total > 0 && answered === total;
+
   const go = (next: number) => {
     setFlipped(false);
     setIndex(Math.max(0, Math.min(total - 1, next)));
   };
 
-  const mark = (known: boolean) => {
+  const mark = async (known: boolean) => {
+    if (!sessionId || !current) return;
+
+    // Local update for UI
     setResults((prev) => {
       const copy = [...prev];
       copy[index] = known;
       return copy;
     });
-    if (known) {
-      awardXp(5);
-      questProgress("q1", 1);
-      questProgress("q2", 1);
-    }
+
+    // API update (async, don't block UI)
+    fetch(`/api/sessions/${sessionId}/answer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        wordId: current.id,
+        result: known ? "correct" : "incorrect",
+      }),
+    }).catch((err) => console.error("Failed to record answer:", err));
+
     if (index < total - 1) {
       setTimeout(() => go(index + 1), 250);
     } else {
@@ -89,6 +115,8 @@ function FlashcardGame() {
   };
 
   const reset = () => {
+    // To properly reset, we should probably invalidate the query to get a new session
+    // But for now, just local reset is fine if they want to replay the same words
     setIndex(0);
     setFlipped(false);
     setResults(deck.map(() => undefined));
@@ -96,21 +124,32 @@ function FlashcardGame() {
   };
 
   useEffect(() => {
-    if (!finished || sessionResult || total === 0) return;
-    const bonusXp = 20 + correct * 2;
-    const bonusCoins = 10 + correct * 3;
-    awardXp(bonusXp);
-    awardCoins(bonusCoins);
-    bumpStreak();
-    questProgress("q4", 1);
-    setSessionResult({
-      xpEarned: correct * 5 + bonusXp,
-      coinsEarned: bonusCoins,
-      correct,
-      total,
-    });
+    if (!finished || sessionResult || !sessionId) return;
+
+    const completeSession = async () => {
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}/complete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ correct, total }),
+        });
+        const json = await res.json();
+        if (json.ok) {
+          setSessionResult({
+            xpEarned: json.data.xpEarned,
+            coinsEarned: json.data.coinsEarned,
+            correct: json.data.correct,
+            total: json.data.total,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to complete session:", err);
+      }
+    };
+
+    completeSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finished]);
+  }, [finished, sessionId]);
 
   if (isLoading) {
     return (
