@@ -9,7 +9,9 @@ export default defineConfig({
   plugins: [
     tsConfigPaths(),
     tanstackStart({
-      server: { entry: "server" },
+      server: {
+        entry: "server",
+      },
     }),
     nitro({
       preset: "vercel",
