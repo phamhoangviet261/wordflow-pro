@@ -21,6 +21,7 @@ import { Route as ApiVocabSetsIndexRouteImport } from './routes/api/vocab-sets/i
 import { Route as ApiGamificationIndexRouteImport } from './routes/api/gamification/index'
 import { Route as AppVocabSetsIndexRouteImport } from './routes/_app.vocab-sets.index'
 import { Route as AppGamesIndexRouteImport } from './routes/_app.games.index'
+import { Route as ApiWordsBulkRouteImport } from './routes/api/words/bulk'
 import { Route as ApiWordsWordIdRouteImport } from './routes/api/words/$wordId'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthGoogleRouteImport } from './routes/api/auth/google'
@@ -87,6 +88,11 @@ const AppGamesIndexRoute = AppGamesIndexRouteImport.update({
   path: '/games/',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiWordsBulkRoute = ApiWordsBulkRouteImport.update({
+  id: '/api/words/bulk',
+  path: '/api/words/bulk',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWordsWordIdRoute = ApiWordsWordIdRouteImport.update({
   id: '/api/words/$wordId',
   path: '/api/words/$wordId',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/words/$wordId': typeof ApiWordsWordIdRoute
+  '/api/words/bulk': typeof ApiWordsBulkRoute
   '/games/': typeof AppGamesIndexRoute
   '/vocab-sets/': typeof AppVocabSetsIndexRoute
   '/api/gamification/': typeof ApiGamificationIndexRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/words/$wordId': typeof ApiWordsWordIdRoute
+  '/api/words/bulk': typeof ApiWordsBulkRoute
   '/games': typeof AppGamesIndexRoute
   '/vocab-sets': typeof AppVocabSetsIndexRoute
   '/api/gamification': typeof ApiGamificationIndexRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/api/auth/google': typeof ApiAuthGoogleRouteWithChildren
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/words/$wordId': typeof ApiWordsWordIdRoute
+  '/api/words/bulk': typeof ApiWordsBulkRoute
   '/_app/games/': typeof AppGamesIndexRoute
   '/_app/vocab-sets/': typeof AppVocabSetsIndexRoute
   '/api/gamification/': typeof ApiGamificationIndexRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/api/auth/google'
     | '/api/auth/logout'
     | '/api/words/$wordId'
+    | '/api/words/bulk'
     | '/games/'
     | '/vocab-sets/'
     | '/api/gamification/'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/api/auth/google'
     | '/api/auth/logout'
     | '/api/words/$wordId'
+    | '/api/words/bulk'
     | '/games'
     | '/vocab-sets'
     | '/api/gamification'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/api/auth/google'
     | '/api/auth/logout'
     | '/api/words/$wordId'
+    | '/api/words/bulk'
     | '/_app/games/'
     | '/_app/vocab-sets/'
     | '/api/gamification/'
@@ -244,6 +256,7 @@ export interface RootRouteChildren {
   ApiAuthGoogleRoute: typeof ApiAuthGoogleRouteWithChildren
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiWordsWordIdRoute: typeof ApiWordsWordIdRoute
+  ApiWordsBulkRoute: typeof ApiWordsBulkRoute
   ApiGamificationIndexRoute: typeof ApiGamificationIndexRoute
   ApiVocabSetsIndexRoute: typeof ApiVocabSetsIndexRoute
   ApiWordsIndexRoute: typeof ApiWordsIndexRoute
@@ -335,6 +348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGamesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/words/bulk': {
+      id: '/api/words/bulk'
+      path: '/api/words/bulk'
+      fullPath: '/api/words/bulk'
+      preLoaderRoute: typeof ApiWordsBulkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/words/$wordId': {
       id: '/api/words/$wordId'
       path: '/api/words/$wordId'
@@ -424,6 +444,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthGoogleRoute: ApiAuthGoogleRouteWithChildren,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiWordsWordIdRoute: ApiWordsWordIdRoute,
+  ApiWordsBulkRoute: ApiWordsBulkRoute,
   ApiGamificationIndexRoute: ApiGamificationIndexRoute,
   ApiVocabSetsIndexRoute: ApiVocabSetsIndexRoute,
   ApiWordsIndexRoute: ApiWordsIndexRoute,

@@ -143,7 +143,7 @@ function VocabularyPage() {
     }
   };
 
-  const handleBulk = () => {
+  const handleBulk = async () => {
     const lines = aiText
       .split("\n")
       .map((l) => l.trim())
@@ -152,20 +152,33 @@ function VocabularyPage() {
       toast.error("Nhập ít nhất một dòng.");
       return;
     }
-    let added = 0;
-    const existing = new Set(items.map((i: { word: string }) => i.word.toLowerCase()));
-    lines.forEach((line) => {
-      const [word, meaning, type, example] = line.split("|").map((s) => s?.trim());
-      if (!word || !meaning) return;
-      if (existing.has(word.toLowerCase())) return;
-      existing.add(word.toLowerCase());
 
-      added++;
-    });
-    if (added === 0) toast.error("Không có từ hợp lệ nào được thêm.");
-    else toast.success(`Đã thêm ${added} từ.`);
-    setAiText("");
-    setAiOpen(false);
+    try {
+      const res = await fetch("/api/words/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lines }),
+      });
+
+      const json = await res.json();
+
+      if (json.ok) {
+        queryClient.invalidateQueries({ queryKey: ["words"] });
+        const { added, skipped } = json.data;
+        if (added === 0) {
+          toast.error(`Không có từ mới nào được thêm. (Bỏ qua ${skipped} từ trùng hoặc lỗi)`);
+        } else {
+          toast.success(`Đã thêm ${added} từ thành công. (Bỏ qua ${skipped} từ trùng)`);
+        }
+        setAiText("");
+        setAiOpen(false);
+      } else {
+        toast.error(json.error.message);
+      }
+    } catch (e) {
+      console.error("Bulk error:", e);
+      toast.error("Lỗi kết nối máy chủ.");
+    }
   };
 
   const learnedCount = data?.learnedCount || 0;
