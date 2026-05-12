@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ieltsSkills } from "@/features/ielts/constants";
-import { 
-  IELTSSkillHero, 
-  IELTSPracticeTypeCard, 
-  IELTSLessonCard, 
-  IELTSStudyHabitCard 
+import {
+  IELTSSkillHero,
+  IELTSPracticeTypeCard,
+  IELTSLessonCard,
+  IELTSStudyHabitCard,
 } from "@/features/ielts/components";
 import { ArrowLeft, Lightbulb, Info } from "lucide-react";
 import { useEffect } from "react";
@@ -39,15 +39,16 @@ function SkillDetailPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-10 py-8 px-4">
       {/* Navigation */}
-      <Link 
-        to="/ielts/skills" 
+      <Link
+        to="/ielts/skills"
         className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-slate-800 transition-colors group"
       >
-        <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" /> Quay lại danh sách kỹ năng
+        <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" /> Quay lại
+        danh sách kỹ năng
       </Link>
 
       {/* Hero Section */}
-      <IELTSSkillHero 
+      <IELTSSkillHero
         name={skill.name}
         icon={skill.icon}
         description={skill.description}
@@ -57,6 +58,7 @@ function SkillDetailPage() {
         color={skill.color}
         accentColor={skill.accentColor}
         bgLight={skill.bgLight}
+        vietnameseName=""
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -79,7 +81,8 @@ function SkillDetailPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-slate-800">Lộ trình bài học</h2>
               <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                {skill.lessons.filter(l => l.isCompleted).length}/{skill.lessons.length} Hoàn thành
+                {skill.lessons.filter((l) => l.isCompleted).length}/{skill.lessons.length} Hoàn
+                thành
               </span>
             </div>
             <div className="space-y-3">
