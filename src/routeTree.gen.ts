@@ -34,6 +34,10 @@ import { Route as AppGamesFlashcardRouteImport } from './routes/_app.games.flash
 import { Route as ApiSessionsSessionIdCompleteRouteImport } from './routes/api/sessions/$sessionId.complete'
 import { Route as ApiSessionsSessionIdAnswerRouteImport } from './routes/api/sessions/$sessionId.answer'
 import { Route as ApiAuthGoogleCallbackRouteImport } from './routes/api/auth/google/callback'
+import { Route as AppIeltsSkillsWritingRouteImport } from './routes/_app.ielts.skills.writing'
+import { Route as AppIeltsSkillsSpeakingRouteImport } from './routes/_app.ielts.skills.speaking'
+import { Route as AppIeltsSkillsReadingRouteImport } from './routes/_app.ielts.skills.reading'
+import { Route as AppIeltsSkillsListeningRouteImport } from './routes/_app.ielts.skills.listening'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -161,6 +165,26 @@ const ApiAuthGoogleCallbackRoute = ApiAuthGoogleCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => ApiAuthGoogleRoute,
 } as any)
+const AppIeltsSkillsWritingRoute = AppIeltsSkillsWritingRouteImport.update({
+  id: '/writing',
+  path: '/writing',
+  getParentRoute: () => AppIeltsSkillsRoute,
+} as any)
+const AppIeltsSkillsSpeakingRoute = AppIeltsSkillsSpeakingRouteImport.update({
+  id: '/speaking',
+  path: '/speaking',
+  getParentRoute: () => AppIeltsSkillsRoute,
+} as any)
+const AppIeltsSkillsReadingRoute = AppIeltsSkillsReadingRouteImport.update({
+  id: '/reading',
+  path: '/reading',
+  getParentRoute: () => AppIeltsSkillsRoute,
+} as any)
+const AppIeltsSkillsListeningRoute = AppIeltsSkillsListeningRouteImport.update({
+  id: '/listening',
+  path: '/listening',
+  getParentRoute: () => AppIeltsSkillsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -170,7 +194,7 @@ export interface FileRoutesByFullPath {
   '/store': typeof AppStoreRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
   '/ielts/road-map': typeof AppIeltsRoadMapRoute
-  '/ielts/skills': typeof AppIeltsSkillsRoute
+  '/ielts/skills': typeof AppIeltsSkillsRouteWithChildren
   '/vocab/$setId': typeof AppVocabSetIdRoute
   '/vocab/list': typeof AppVocabListRoute
   '/vocab/sets': typeof AppVocabSetsRoute
@@ -184,6 +208,10 @@ export interface FileRoutesByFullPath {
   '/api/sessions/': typeof ApiSessionsIndexRoute
   '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
   '/api/words/': typeof ApiWordsIndexRoute
+  '/ielts/skills/listening': typeof AppIeltsSkillsListeningRoute
+  '/ielts/skills/reading': typeof AppIeltsSkillsReadingRoute
+  '/ielts/skills/speaking': typeof AppIeltsSkillsSpeakingRoute
+  '/ielts/skills/writing': typeof AppIeltsSkillsWritingRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
   '/api/sessions/$sessionId/answer': typeof ApiSessionsSessionIdAnswerRoute
   '/api/sessions/$sessionId/complete': typeof ApiSessionsSessionIdCompleteRoute
@@ -196,7 +224,7 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/games/flashcard': typeof AppGamesFlashcardRoute
   '/ielts/road-map': typeof AppIeltsRoadMapRoute
-  '/ielts/skills': typeof AppIeltsSkillsRoute
+  '/ielts/skills': typeof AppIeltsSkillsRouteWithChildren
   '/vocab/$setId': typeof AppVocabSetIdRoute
   '/vocab/list': typeof AppVocabListRoute
   '/vocab/sets': typeof AppVocabSetsRoute
@@ -210,6 +238,10 @@ export interface FileRoutesByTo {
   '/api/sessions': typeof ApiSessionsIndexRoute
   '/api/vocab-sets': typeof ApiVocabSetsIndexRoute
   '/api/words': typeof ApiWordsIndexRoute
+  '/ielts/skills/listening': typeof AppIeltsSkillsListeningRoute
+  '/ielts/skills/reading': typeof AppIeltsSkillsReadingRoute
+  '/ielts/skills/speaking': typeof AppIeltsSkillsSpeakingRoute
+  '/ielts/skills/writing': typeof AppIeltsSkillsWritingRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
   '/api/sessions/$sessionId/answer': typeof ApiSessionsSessionIdAnswerRoute
   '/api/sessions/$sessionId/complete': typeof ApiSessionsSessionIdCompleteRoute
@@ -224,7 +256,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/games/flashcard': typeof AppGamesFlashcardRoute
   '/_app/ielts/road-map': typeof AppIeltsRoadMapRoute
-  '/_app/ielts/skills': typeof AppIeltsSkillsRoute
+  '/_app/ielts/skills': typeof AppIeltsSkillsRouteWithChildren
   '/_app/vocab/$setId': typeof AppVocabSetIdRoute
   '/_app/vocab/list': typeof AppVocabListRoute
   '/_app/vocab/sets': typeof AppVocabSetsRoute
@@ -238,6 +270,10 @@ export interface FileRoutesById {
   '/api/sessions/': typeof ApiSessionsIndexRoute
   '/api/vocab-sets/': typeof ApiVocabSetsIndexRoute
   '/api/words/': typeof ApiWordsIndexRoute
+  '/_app/ielts/skills/listening': typeof AppIeltsSkillsListeningRoute
+  '/_app/ielts/skills/reading': typeof AppIeltsSkillsReadingRoute
+  '/_app/ielts/skills/speaking': typeof AppIeltsSkillsSpeakingRoute
+  '/_app/ielts/skills/writing': typeof AppIeltsSkillsWritingRoute
   '/api/auth/google/callback': typeof ApiAuthGoogleCallbackRoute
   '/api/sessions/$sessionId/answer': typeof ApiSessionsSessionIdAnswerRoute
   '/api/sessions/$sessionId/complete': typeof ApiSessionsSessionIdCompleteRoute
@@ -266,6 +302,10 @@ export interface FileRouteTypes {
     | '/api/sessions/'
     | '/api/vocab-sets/'
     | '/api/words/'
+    | '/ielts/skills/listening'
+    | '/ielts/skills/reading'
+    | '/ielts/skills/speaking'
+    | '/ielts/skills/writing'
     | '/api/auth/google/callback'
     | '/api/sessions/$sessionId/answer'
     | '/api/sessions/$sessionId/complete'
@@ -292,6 +332,10 @@ export interface FileRouteTypes {
     | '/api/sessions'
     | '/api/vocab-sets'
     | '/api/words'
+    | '/ielts/skills/listening'
+    | '/ielts/skills/reading'
+    | '/ielts/skills/speaking'
+    | '/ielts/skills/writing'
     | '/api/auth/google/callback'
     | '/api/sessions/$sessionId/answer'
     | '/api/sessions/$sessionId/complete'
@@ -319,6 +363,10 @@ export interface FileRouteTypes {
     | '/api/sessions/'
     | '/api/vocab-sets/'
     | '/api/words/'
+    | '/_app/ielts/skills/listening'
+    | '/_app/ielts/skills/reading'
+    | '/_app/ielts/skills/speaking'
+    | '/_app/ielts/skills/writing'
     | '/api/auth/google/callback'
     | '/api/sessions/$sessionId/answer'
     | '/api/sessions/$sessionId/complete'
@@ -517,8 +565,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthGoogleCallbackRouteImport
       parentRoute: typeof ApiAuthGoogleRoute
     }
+    '/_app/ielts/skills/writing': {
+      id: '/_app/ielts/skills/writing'
+      path: '/writing'
+      fullPath: '/ielts/skills/writing'
+      preLoaderRoute: typeof AppIeltsSkillsWritingRouteImport
+      parentRoute: typeof AppIeltsSkillsRoute
+    }
+    '/_app/ielts/skills/speaking': {
+      id: '/_app/ielts/skills/speaking'
+      path: '/speaking'
+      fullPath: '/ielts/skills/speaking'
+      preLoaderRoute: typeof AppIeltsSkillsSpeakingRouteImport
+      parentRoute: typeof AppIeltsSkillsRoute
+    }
+    '/_app/ielts/skills/reading': {
+      id: '/_app/ielts/skills/reading'
+      path: '/reading'
+      fullPath: '/ielts/skills/reading'
+      preLoaderRoute: typeof AppIeltsSkillsReadingRouteImport
+      parentRoute: typeof AppIeltsSkillsRoute
+    }
+    '/_app/ielts/skills/listening': {
+      id: '/_app/ielts/skills/listening'
+      path: '/listening'
+      fullPath: '/ielts/skills/listening'
+      preLoaderRoute: typeof AppIeltsSkillsListeningRouteImport
+      parentRoute: typeof AppIeltsSkillsRoute
+    }
   }
 }
+
+interface AppIeltsSkillsRouteChildren {
+  AppIeltsSkillsListeningRoute: typeof AppIeltsSkillsListeningRoute
+  AppIeltsSkillsReadingRoute: typeof AppIeltsSkillsReadingRoute
+  AppIeltsSkillsSpeakingRoute: typeof AppIeltsSkillsSpeakingRoute
+  AppIeltsSkillsWritingRoute: typeof AppIeltsSkillsWritingRoute
+}
+
+const AppIeltsSkillsRouteChildren: AppIeltsSkillsRouteChildren = {
+  AppIeltsSkillsListeningRoute: AppIeltsSkillsListeningRoute,
+  AppIeltsSkillsReadingRoute: AppIeltsSkillsReadingRoute,
+  AppIeltsSkillsSpeakingRoute: AppIeltsSkillsSpeakingRoute,
+  AppIeltsSkillsWritingRoute: AppIeltsSkillsWritingRoute,
+}
+
+const AppIeltsSkillsRouteWithChildren = AppIeltsSkillsRoute._addFileChildren(
+  AppIeltsSkillsRouteChildren,
+)
 
 interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRoute
@@ -527,7 +621,7 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppGamesFlashcardRoute: typeof AppGamesFlashcardRoute
   AppIeltsRoadMapRoute: typeof AppIeltsRoadMapRoute
-  AppIeltsSkillsRoute: typeof AppIeltsSkillsRoute
+  AppIeltsSkillsRoute: typeof AppIeltsSkillsRouteWithChildren
   AppVocabSetIdRoute: typeof AppVocabSetIdRoute
   AppVocabListRoute: typeof AppVocabListRoute
   AppVocabSetsRoute: typeof AppVocabSetsRoute
@@ -541,7 +635,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppGamesFlashcardRoute: AppGamesFlashcardRoute,
   AppIeltsRoadMapRoute: AppIeltsRoadMapRoute,
-  AppIeltsSkillsRoute: AppIeltsSkillsRoute,
+  AppIeltsSkillsRoute: AppIeltsSkillsRouteWithChildren,
   AppVocabSetIdRoute: AppVocabSetIdRoute,
   AppVocabListRoute: AppVocabListRoute,
   AppVocabSetsRoute: AppVocabSetsRoute,
