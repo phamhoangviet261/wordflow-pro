@@ -26,6 +26,38 @@ export const Route = createFileRoute("/api/words/bulk")({
           let added = 0;
           let skipped = 0;
 
+          // 0. Ensure 'Vocabulary Set Starter' exists
+          let starterSet = await db.vocabSet.findFirst({
+            where: {
+              createdBy: userId,
+              title: "Vocabulary Set Starter",
+            },
+          });
+
+          if (!starterSet) {
+            starterSet = await db.vocabSet.create({
+              data: {
+                title: "Vocabulary Set Starter",
+                description: "Bộ từ vựng mặc định để lưu trữ tất cả các từ bạn đã thêm.",
+                color: "from-blue-400 to-indigo-500",
+                createdBy: userId,
+                isSystem: false,
+                isPublic: false,
+                status: "published",
+              },
+            });
+
+            await db.userVocabSet.create({
+              data: {
+                userId: userId,
+                vocabSetId: starterSet.id,
+                progressPercent: 0,
+              },
+            });
+          }
+
+          const starterSetId = starterSet.id;
+
           for (const line of lines) {
             const parts = line.split("|").map((s) => s?.trim());
             
@@ -82,6 +114,25 @@ export const Route = createFileRoute("/api/words/bulk")({
                   learned: false,
                 },
               });
+
+              // 4. Add to 'Vocabulary Set Starter'
+              const existingInSet = await db.vocabSetWord.findUnique({
+                where: {
+                  vocabSetId_wordId: {
+                    vocabSetId: starterSetId,
+                    wordId: dictWord.id,
+                  },
+                },
+              });
+
+              if (!existingInSet) {
+                await db.vocabSetWord.create({
+                  data: {
+                    vocabSetId: starterSetId,
+                    wordId: dictWord.id,
+                  },
+                });
+              }
 
               added++;
             } catch (err) {

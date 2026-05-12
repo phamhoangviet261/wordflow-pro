@@ -205,6 +205,55 @@ export const Route = createFileRoute("/api/words/")({
             },
           });
 
+          // 3. Add to 'Vocabulary Set Starter'
+          let starterSet = await db.vocabSet.findFirst({
+            where: {
+              createdBy: userId,
+              title: "Vocabulary Set Starter",
+            },
+          });
+
+          if (!starterSet) {
+            starterSet = await db.vocabSet.create({
+              data: {
+                title: "Vocabulary Set Starter",
+                description: "Bộ từ vựng mặc định để lưu trữ tất cả các từ bạn đã thêm.",
+                color: "from-blue-400 to-indigo-500",
+                createdBy: userId,
+                isSystem: false,
+                isPublic: false,
+                status: "published",
+              },
+            });
+
+            await db.userVocabSet.create({
+              data: {
+                userId: userId,
+                vocabSetId: starterSet.id,
+                progressPercent: 0,
+              },
+            });
+          }
+
+          // Check if already in the set
+          const existingInSet = await db.vocabSetWord.findUnique({
+            where: {
+              vocabSetId_wordId: {
+                vocabSetId: starterSet.id,
+                wordId: dictWord.id,
+              },
+            },
+          });
+
+          if (!existingInSet) {
+            await db.vocabSetWord.create({
+              data: {
+                vocabSetId: starterSet.id,
+                wordId: dictWord.id,
+              },
+            });
+          }
+
           return new Response(
             JSON.stringify({
               ok: true,

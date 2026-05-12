@@ -184,6 +184,37 @@ export const Route = createFileRoute("/api/auth/google/callback")({
             },
           });
 
+          // 4. Initialize 'Vocabulary Set Starter'
+          const starterSet = await db.vocabSet.findFirst({
+            where: {
+              createdBy: user.id,
+              title: "Vocabulary Set Starter",
+            },
+          });
+
+          if (!starterSet) {
+            const newStarter = await db.vocabSet.create({
+              data: {
+                title: "Vocabulary Set Starter",
+                description: "Bộ từ vựng mặc định để lưu trữ tất cả các từ bạn đã thêm.",
+                color: "from-blue-400 to-indigo-500",
+                createdBy: user.id,
+                isSystem: false,
+                isPublic: false,
+                status: "published",
+              },
+            });
+
+            // Automatically unlock for the user
+            await db.userVocabSet.create({
+              data: {
+                userId: user.id,
+                vocabSetId: newStarter.id,
+                progressPercent: 0,
+              },
+            });
+          }
+
           // --- Create sealed session ---
           const session = await useSession<{
             user?: { userId: string; email: string; name: string | null; image: string | null };
