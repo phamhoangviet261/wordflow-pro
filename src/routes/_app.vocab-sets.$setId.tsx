@@ -1,5 +1,16 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
-import { ArrowLeft, ListChecks, Play, Volume2, Sparkles, Trash2, SearchX, Home, RotateCcw, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ListChecks,
+  Play,
+  Volume2,
+  Sparkles,
+  Trash2,
+  SearchX,
+  Home,
+  RotateCcw,
+  Loader2,
+} from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -17,16 +28,17 @@ export const Route = createFileRoute("/_app/vocab-sets/$setId")({
       <SetNotFound
         title="Có lỗi khi tải bộ từ"
         description={error.message || "Đã xảy ra sự cố không mong muốn."}
-        onRetry={() => { router.invalidate(); reset(); }}
+        onRetry={() => {
+          router.invalidate();
+          reset();
+        }}
       />
     );
   },
   notFoundComponent: () => {
     const { setId } = Route.useParams();
     return (
-      <SetNotFound
-        description={`Bộ từ vựng với mã "${setId}" không tồn tại hoặc đã bị xoá.`}
-      />
+      <SetNotFound description={`Bộ từ vựng với mã "${setId}" không tồn tại hoặc đã bị xoá.`} />
     );
   },
 });
@@ -85,7 +97,12 @@ function SetDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: response, isLoading, isError, error } = useQuery({
+  const {
+    data: response,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["vocab-set", setId],
     queryFn: async () => {
       const res = await fetch(`/api/vocab-sets/${setId}`);
@@ -128,7 +145,10 @@ function SetDetailPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <Link to="/vocab-sets" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800">
+      <Link
+        to="/vocab-sets"
+        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800"
+      >
         <ArrowLeft className="size-4" /> Tất cả bộ từ
       </Link>
 
@@ -138,7 +158,9 @@ function SetDetailPage() {
             <h1 className="text-2xl md:text-3xl font-extrabold">{set.title}</h1>
             <p className="opacity-90 mt-1 max-w-xl">{set.description}</p>
             <div className="flex items-center gap-4 mt-4 text-sm">
-              <span className="inline-flex items-center gap-1.5"><ListChecks className="size-4" /> {setWords.length} từ</span>
+              <span className="inline-flex items-center gap-1.5">
+                <ListChecks className="size-4" /> {setWords.length} từ
+              </span>
               <span>•</span>
               <span>{learned} đã học</span>
               <span>•</span>
@@ -146,7 +168,10 @@ function SetDetailPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to="/games/flashcard" className="inline-flex items-center gap-2 bg-white text-slate-800 font-bold text-sm px-4 py-2.5 rounded-2xl shadow-md hover:bg-slate-100 transition">
+            <Link
+              to="/games/flashcard"
+              className="inline-flex items-center gap-2 bg-white text-slate-800 font-bold text-sm px-4 py-2.5 rounded-2xl shadow-md hover:bg-slate-100 transition"
+            >
               <Play className="size-4" /> Luyện tập
             </Link>
             <button
@@ -176,8 +201,11 @@ function SetDetailPage() {
           <div className="p-8 text-center text-sm text-slate-500">Bộ này chưa có từ nào.</div>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {setWords.map((w) => (
-              <li key={w.id} className="flex items-center gap-4 px-5 py-3 hover:bg-slate-50/60 transition">
+            {setWords.map((w: any) => (
+              <li
+                key={w.id}
+                className="flex items-center gap-4 px-5 py-3 hover:bg-slate-50/60 transition"
+              >
                 <button
                   onClick={() => speak(w.word)}
                   className="size-9 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center shrink-0"
@@ -190,8 +218,14 @@ function SetDetailPage() {
                   <div className="text-xs text-slate-400">{w.phonetic}</div>
                 </div>
                 <div className="flex-1 text-sm text-slate-600">{w.meaning}</div>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${typeColors[w.type]}`}>{w.type}</span>
-                <span className={`text-[10px] font-semibold px-2 py-1 rounded-md ${w.learned ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-500"}`}>
+                <span
+                  className={`text-[10px] font-bold px-2 py-1 rounded-md ${typeColors[w.type]}`}
+                >
+                  {w.type}
+                </span>
+                <span
+                  className={`text-[10px] font-semibold px-2 py-1 rounded-md ${w.learned ? "bg-green-100 text-green-600" : "bg-slate-100 text-slate-500"}`}
+                >
                   {w.learned ? "Đã học" : "Chưa học"}
                 </span>
               </li>
