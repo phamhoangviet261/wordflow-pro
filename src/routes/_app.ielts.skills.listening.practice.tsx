@@ -346,40 +346,6 @@ function IELTSListeningPracticePage() {
           />
         </div>
 
-        {isSidebarOpen && (
-          <div className="px-4 py-6 border-t border-slate-800">
-            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-              Câu hỏi
-            </h3>
-            <div className="grid grid-cols-5 gap-2">
-              {QUESTIONS.map((q, i) => {
-                const isAnswered = userAnswers[i].trim().length > 0;
-                const isCorrect =
-                  isSubmitted &&
-                  userAnswers[i].trim().toLowerCase() === q.correctAnswer.toLowerCase();
-
-                return (
-                  <button
-                    key={q.id}
-                    onClick={() => scrollToQuestion(q.id)}
-                    className={cn(
-                      "size-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all",
-                      !isSubmitted
-                        ? isAnswered
-                          ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20"
-                          : "bg-slate-800 text-slate-500 hover:bg-slate-700"
-                        : isCorrect
-                          ? "bg-green-500 text-white"
-                          : "bg-red-500 text-white",
-                    )}
-                  >
-                    {q.id}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         <div className="p-4 border-t border-slate-800">
           <button
@@ -486,10 +452,6 @@ function IELTSListeningPracticePage() {
                         onClick={() => {
                           setSelectedColor(color);
                           setIsColorPickerOpen(false);
-                          if (selectedColor.id !== color.id) {
-                            setSelectedColor(color);
-                            setIsColorPickerOpen(false);
-                          }
                         }}
                         className={cn(
                           "size-8 rounded-full border-2 transition-all flex items-center justify-center",
@@ -506,20 +468,6 @@ function IELTSListeningPracticePage() {
                   </div>
                 </div>
               )}
-            </div>
-            <div className="hidden sm:flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Trạng thái
-                </div>
-                <div className="text-xs font-bold text-blue-600">
-                  {!isSubmitted
-                    ? "Đang làm bài"
-                    : isTranscriptManualUnlocked
-                      ? "Review đáp án"
-                      : "Đã nộp bài"}
-                </div>
-              </div>
             </div>
             <div className="hidden sm:flex items-center gap-4">
               <div className="text-right">
@@ -567,7 +515,7 @@ function IELTSListeningPracticePage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 relative">
+            <div className="flex-1 overflow-y-auto p-8 pb-32 relative">
               {isTranscriptVisible ? (
                 <div className="space-y-6 text-sm leading-relaxed text-slate-600 font-medium animate-in fade-in duration-500">
                   <p>
@@ -703,9 +651,42 @@ function IELTSListeningPracticePage() {
           <div className="flex-1 md:w-[55%] flex flex-col bg-slate-50/50 overflow-hidden">
             <div className="p-6 border-b border-slate-100 bg-white/50 backdrop-blur shrink-0 flex items-center justify-between">
               <h2 className="text-sm font-black text-slate-800">QUESTIONS</h2>
+              
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-xl border border-slate-200">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1 hidden sm:inline">
+                  Câu hỏi:
+                </span>
+                <div className="flex items-center gap-1">
+                  {QUESTIONS.map((q, i) => {
+                    const isAnswered = userAnswers[i].trim().length > 0;
+                    const isCorrect =
+                      isSubmitted &&
+                      userAnswers[i].trim().toLowerCase() === q.correctAnswer.toLowerCase();
+
+                    return (
+                      <button
+                        key={q.id}
+                        onClick={() => scrollToQuestion(q.id)}
+                        className={cn(
+                          "size-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all",
+                          !isSubmitted
+                            ? isAnswered
+                              ? "bg-blue-600 text-white shadow-md shadow-blue-100"
+                              : "bg-white text-slate-400 border border-slate-200 hover:border-slate-300"
+                            : isCorrect
+                              ? "bg-green-500 text-white shadow-sm"
+                              : "bg-red-500 text-white shadow-sm",
+                        )}
+                      >
+                        {q.id}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-8">
+            <div className="flex-1 overflow-y-auto p-8 pb-32 space-y-8">
               {isSubmitted && (
                 <div className="p-6 rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50 space-y-4 animate-in slide-in-from-top duration-500">
                   <div className="flex items-center justify-between">
@@ -856,14 +837,8 @@ function IELTSListeningPracticePage() {
         </div>
 
         {/* 4. Sticky Bottom Audio Player */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-24 flex items-center px-8">
-          {/* Use translate based on sidebar to match layout */}
-          <div
-            className={cn(
-              "flex-1 flex items-center gap-8 transition-all duration-300",
-              isSidebarOpen ? "md:ml-64" : "md:ml-16",
-            )}
-          >
+        <div className="absolute bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-24 flex items-center px-8">
+          <div className="flex-1 flex items-center gap-8">
             <div className="flex items-center gap-4 shrink-0">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
