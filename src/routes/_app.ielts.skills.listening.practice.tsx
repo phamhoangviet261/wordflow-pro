@@ -3,6 +3,8 @@ import { useState, useMemo, useEffect } from "react";
 import {
   ArrowLeft,
   Volume2,
+  Volume1,
+  VolumeX,
   CheckCircle2,
   Play,
   RotateCcw,
@@ -178,6 +180,9 @@ function IELTSListeningPracticePage() {
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [isHighlighterMode, setIsHighlighterMode] = useState(false);
+  const [volume, setVolume] = useState(0.8);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   const duration = 90; // 01:30
 
@@ -199,6 +204,20 @@ function IELTSListeningPracticePage() {
       audioRef.current.pause();
     }
   }, [isPlaying]);
+
+  // Sync volume with audio element
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : Math.min(1, volume);
+    }
+  }, [volume, isMuted]);
+
+  // Sync playback rate
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackRate;
+    }
+  }, [playbackRate]);
 
   const isTranscriptVisible = isSubmitted || isTranscriptManualUnlocked;
 
@@ -841,10 +860,47 @@ function IELTSListeningPracticePage() {
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center gap-3 shrink-0">
+            <div className="hidden lg:flex items-center gap-4 shrink-0">
               <div className="h-8 w-px bg-slate-100" />
-              <button className="text-[10px] font-black text-slate-800 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-100 hover:bg-slate-100 transition-all">
-                1.0x
+
+              <div className="flex items-center gap-3 bg-slate-50/50 px-3 py-2 rounded-2xl border border-slate-100 group transition-all hover:bg-slate-50 hover:border-slate-200">
+                <button
+                  onClick={() => setIsMuted(!isMuted)}
+                  className="text-slate-400 hover:text-blue-600 transition-colors shrink-0"
+                >
+                  {isMuted || volume === 0 ? (
+                    <VolumeX className="size-4" />
+                  ) : volume < 0.5 ? (
+                    <Volume1 className="size-4" />
+                  ) : (
+                    <Volume2 className="size-4" />
+                  )}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={isMuted ? 0 : volume}
+                  onChange={(e) => {
+                    const newVol = parseFloat(e.target.value);
+                    setVolume(newVol);
+                    if (newVol > 0) setIsMuted(false);
+                  }}
+                  className="w-20 h-1 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  const rates = [1, 1.25, 1.5, 2];
+                  const currentIndex = rates.indexOf(playbackRate);
+                  const nextIndex = (currentIndex + 1) % rates.length;
+                  setPlaybackRate(rates[nextIndex]);
+                }}
+                className="text-[10px] font-black text-slate-800 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-100 hover:bg-slate-100 transition-all min-w-[48px]"
+              >
+                {playbackRate.toFixed(1)}x
               </button>
             </div>
           </div>
