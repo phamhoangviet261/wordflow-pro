@@ -19,6 +19,7 @@ import {
   Layout,
   Headphones,
   FileText,
+  PenLine,
   Lock,
   Pause,
   Highlighter,
@@ -183,6 +184,8 @@ function IELTSListeningPracticePage() {
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [scratchpadText, setScratchpadText] = useState("");
+  const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const duration = 90; // 01:30
 
@@ -218,6 +221,46 @@ function IELTSListeningPracticePage() {
       audioRef.current.playbackRate = playbackRate;
     }
   }, [playbackRate]);
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts if user is typing in an input
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        setIsPlaying((prev) => !prev);
+      }
+      if (e.code === "ArrowLeft") {
+        if (audioRef.current) {
+          audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 5);
+        }
+      }
+      if (e.code === "ArrowRight") {
+        if (audioRef.current) {
+          audioRef.current.currentTime = Math.min(duration, audioRef.current.currentTime + 5);
+        }
+      }
+      if (e.code === "ArrowUp") {
+        e.preventDefault();
+        setVolume((prev) => Math.min(1, prev + 0.1));
+      }
+      if (e.code === "ArrowDown") {
+        e.preventDefault();
+        setVolume((prev) => Math.max(0, prev - 0.1));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isPlaying, duration]);
 
   const isTranscriptVisible = isSubmitted || isTranscriptManualUnlocked;
 
@@ -817,14 +860,28 @@ function IELTSListeningPracticePage() {
             <div className="flex items-center gap-4 shrink-0">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="size-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-200 hover:scale-105 active:scale-95 transition-all"
+                className="size-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95 shrink-0"
               >
-                {isPlaying ? (
-                  <Pause className="size-6 fill-current" />
-                ) : (
-                  <Play className="size-6 fill-current" />
-                )}
+                {isPlaying ? <Pause className="size-6" /> : <Play className="size-6 ml-1" />}
               </button>
+
+              {/* Waveform Visualizer */}
+              <div className="hidden xl:flex items-center gap-0.5 h-6 px-2">
+                {[...Array(12)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "w-0.5 bg-blue-400/40 rounded-full transition-all duration-500",
+                      isPlaying ? "animate-bounce" : "h-1 bg-slate-200",
+                    )}
+                    style={{
+                      height: isPlaying ? `${20 + Math.random() * 80}%` : "4px",
+                      animationDuration: `${0.5 + Math.random() * 0.5}s`,
+                      animationDelay: `${i * 0.05}s`,
+                    }}
+                  />
+                ))}
+              </div>
             </div>
 
             <div className="flex-1 flex flex-col gap-1.5 min-w-0">
@@ -958,6 +1015,64 @@ function IELTSListeningPracticePage() {
                 })}
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scratchpad Floating Button */}
+      <button
+        onClick={() => setIsScratchpadOpen(!isScratchpadOpen)}
+        className={cn(
+          "fixed bottom-32 right-8 z-[150] size-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-95 group",
+          isScratchpadOpen
+            ? "bg-slate-800 text-white rotate-90"
+            : "bg-white text-blue-600 border border-blue-100 hover:border-blue-200",
+        )}
+      >
+        {isScratchpadOpen ? <X className="size-6" /> : <PenLine className="size-6" />}
+        {!isScratchpadOpen && (
+          <span className="absolute right-full mr-3 px-3 py-1.5 bg-slate-800 text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+            GIẤY NHÁP
+          </span>
+        )}
+      </button>
+
+      {/* Scratchpad Panel */}
+      <div
+        className={cn(
+          "fixed top-24 bottom-32 right-8 w-80 z-[140] transition-all duration-500 ease-out",
+          isScratchpadOpen
+            ? "translate-x-0 opacity-100"
+            : "translate-x-12 opacity-0 pointer-events-none",
+        )}
+      >
+        <div className="h-full bg-white/90 backdrop-blur-xl rounded-[32px] shadow-2xl border border-white flex flex-col overflow-hidden ring-1 ring-slate-200/50">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-100 rounded-lg">
+                <PenLine className="size-4 text-blue-600" />
+              </div>
+              <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                Giấy nháp
+              </span>
+            </div>
+            <button
+              onClick={() => setScratchpadText("")}
+              className="text-[9px] font-black text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest"
+            >
+              Xóa hết
+            </button>
+          </div>
+          <textarea
+            value={scratchpadText}
+            onChange={(e) => setScratchpadText(e.target.value)}
+            placeholder="Ghi chú nhanh ở đây (tên riêng, số điện thoại, keyword...)"
+            className="flex-1 p-6 text-sm font-medium text-slate-600 placeholder:text-slate-300 resize-none focus:outline-none bg-transparent leading-relaxed"
+          />
+          <div className="p-4 bg-blue-50/50 border-t border-blue-100/50">
+            <p className="text-[9px] font-bold text-blue-400 text-center uppercase tracking-[0.2em]">
+              Tự động lưu nội dung
+            </p>
           </div>
         </div>
       </div>
