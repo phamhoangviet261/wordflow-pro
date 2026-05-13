@@ -170,12 +170,14 @@ const HIGHLIGHT_COLORS = [
 function IELTSListeningPracticePage() {
   const [userAnswers, setUserAnswers] = useState<string[]>(Array(QUESTIONS.length).fill(""));
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isTranscriptManualUnlocked, setIsTranscriptManualUnlocked] = useState(false);
   const [selectedColor, setSelectedColor] = useState(HIGHLIGHT_COLORS[0]);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [isHighlighterMode, setIsHighlighterMode] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const duration = 90; // 01:30
 
@@ -216,6 +218,14 @@ function IELTSListeningPracticePage() {
     setUserAnswers(Array(QUESTIONS.length).fill(""));
     setIsSubmitted(false);
     setIsTranscriptManualUnlocked(false);
+    setExpandedQuestions([]);
+  };
+
+  const toggleQuestionExpansion = (id: number) => {
+    if (!isSubmitted) return;
+    setExpandedQuestions((prev) =>
+      prev.includes(id) ? prev.filter((qId) => qId !== id) : [...prev, id],
+    );
   };
 
   const isAnyFilled = userAnswers.some((ans) => ans.trim().length > 0);
@@ -422,7 +432,6 @@ function IELTSListeningPracticePage() {
 
             <div className="relative flex items-center">
               <button
-                onClick={toggleHighlight}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-l-xl font-bold text-xs border border-r-0 transition-all shadow-sm",
                   selectedColor.lightBg,
@@ -432,7 +441,7 @@ function IELTSListeningPracticePage() {
                 )}
               >
                 <Highlighter className="size-4" />
-                <span className="hidden sm:inline">TÔ MÀU</span>
+                <span className="hidden sm:inline">ĐỔI MÀU</span>
               </button>
 
               <button
@@ -500,7 +509,7 @@ function IELTSListeningPracticePage() {
         </header>
 
         {/* 3. Main Split Workspace */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden pb-24">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden pb-28">
           {/* Transcript Panel (LEFT) */}
           <div className="w-full md:w-[45%] flex flex-col border-r border-slate-100 bg-white overflow-hidden">
             <div className="p-6 border-b border-slate-50 flex items-center justify-between shrink-0">
@@ -508,6 +517,18 @@ function IELTSListeningPracticePage() {
                 <FileText className="size-4 text-blue-600" /> TRANSCRIPT
               </h2>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsHighlighterMode(!isHighlighterMode)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border flex items-center gap-1.5 shadow-sm",
+                    isHighlighterMode
+                      ? "bg-yellow-400 text-yellow-900 border-yellow-500 shadow-yellow-100"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
+                  )}
+                >
+                  <Highlighter className="size-3" />
+                  TÔ MÀU
+                </button>
                 <button
                   onClick={() => setIsTranscriptManualUnlocked(!isTranscriptManualUnlocked)}
                   className={cn(
@@ -523,7 +544,17 @@ function IELTSListeningPracticePage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 pb-32 relative">
+            <div
+              className={cn(
+                "flex-1 overflow-y-auto p-8 pb-32 relative",
+                isHighlighterMode && "cursor-text",
+              )}
+              onMouseUp={() => {
+                if (isHighlighterMode) {
+                  toggleHighlight();
+                }
+              }}
+            >
               {isTranscriptVisible ? (
                 <div className="space-y-6 text-sm leading-relaxed text-slate-600 font-medium animate-in fade-in duration-500">
                   <p>
@@ -531,19 +562,7 @@ function IELTSListeningPracticePage() {
                     phone number, please?
                   </p>
                   <p>
-                    <span className="font-bold text-slate-800">Student:</span> Yes, it’s{" "}
-                    <span
-                      className={cn(
-                        "px-1 rounded-sm font-bold",
-                        isSubmitted &&
-                          (userAnswers[0].trim().toLowerCase() ===
-                          QUESTIONS[0].correctAnswer.toLowerCase()
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700 underline decoration-2"),
-                      )}
-                    >
-                      0452365478
-                    </span>
+                    <span className="font-bold text-slate-800">Student:</span> Yes, it’s 0452365478
                   </p>
                   <p>
                     <span className="font-bold text-slate-800">Receptionist:</span> Thank you.
@@ -555,66 +574,16 @@ function IELTSListeningPracticePage() {
                   </p>
                   <p>
                     <span className="font-bold text-slate-800">Marina:</span> Hi, John, this is
-                    Marina Silva calling from{" "}
-                    <span
-                      className={cn(
-                        "px-1 rounded-sm font-bold",
-                        isSubmitted &&
-                          (userAnswers[0].trim().toLowerCase() ===
-                          QUESTIONS[0].correctAnswer.toLowerCase()
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700 underline decoration-2"),
-                      )}
-                    >
-                      Old Time Toys
-                    </span>
-                    . Your colleague Alex gave me your phone number. She said you can help me.
+                    Marina Silva calling from Old Time Toys . Your colleague Alex gave me your phone
+                    number. She said you can help me.
                   </p>
                   <p>
                     I need some information on your new products. Could you please call me when you
-                    are back in the office? My phone number is{" "}
-                    <span
-                      className={cn(
-                        "px-1 rounded-sm font-bold",
-                        isSubmitted &&
-                          (userAnswers[2].trim().toLowerCase() ===
-                          QUESTIONS[2].correctAnswer.toLowerCase()
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700 underline decoration-2"),
-                      )}
-                    >
-                      0-2-0-8, 6-5-5-7-6-2-1
-                    </span>
-                    .
+                    are back in the office? My phone number is 0-2-0-8, 6-5-5-7-6-2-1 .
                   </p>
                   <p>
-                    Also, can you please email me your new{" "}
-                    <span
-                      className={cn(
-                        "px-1 rounded-sm font-bold",
-                        isSubmitted &&
-                          (userAnswers[1].trim().toLowerCase() ===
-                          QUESTIONS[1].correctAnswer.toLowerCase()
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700 underline decoration-2"),
-                      )}
-                    >
-                      brochure
-                    </span>{" "}
-                    and information about your prices? My email address is{" "}
-                    <span
-                      className={cn(
-                        "px-1 rounded-sm font-bold",
-                        isSubmitted &&
-                          (userAnswers[3].trim().toLowerCase() ===
-                          QUESTIONS[3].correctAnswer.toLowerCase()
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700 underline decoration-2"),
-                      )}
-                    >
-                      Marina.Silva@oldtime-toys.com
-                    </span>
-                    .
+                    Also, can you please email me your new brochure and information about your
+                    prices? My email address is Marina.Silva@oldtime-toys.com .
                   </p>
                   <p>Thanks a lot. I look forward to hearing from you.</p>
                 </div>
@@ -646,39 +615,6 @@ function IELTSListeningPracticePage() {
           <div className="flex-1 md:w-[55%] flex flex-col bg-slate-50/50 overflow-hidden">
             <div className="p-6 border-b border-slate-100 bg-white/50 backdrop-blur shrink-0 flex items-center justify-between">
               <h2 className="text-sm font-black text-slate-800">QUESTIONS</h2>
-
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-xl border border-slate-200">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1 hidden sm:inline">
-                  Câu hỏi:
-                </span>
-                <div className="flex items-center gap-1">
-                  {QUESTIONS.map((q, i) => {
-                    const isAnswered = userAnswers[i].trim().length > 0;
-                    const isCorrect =
-                      isSubmitted &&
-                      userAnswers[i].trim().toLowerCase() === q.correctAnswer.toLowerCase();
-
-                    return (
-                      <button
-                        key={q.id}
-                        onClick={() => scrollToQuestion(q.id)}
-                        className={cn(
-                          "size-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all",
-                          !isSubmitted
-                            ? isAnswered
-                              ? "bg-blue-600 text-white shadow-md shadow-blue-100"
-                              : "bg-white text-slate-400 border border-slate-200 hover:border-slate-300"
-                            : isCorrect
-                              ? "bg-green-500 text-white shadow-sm"
-                              : "bg-red-500 text-white shadow-sm",
-                        )}
-                      >
-                        {q.id}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 pb-32 space-y-8">
@@ -729,17 +665,19 @@ function IELTSListeningPracticePage() {
                   const normalizedUser = userAnswers[i].trim().toLowerCase();
                   const normalizedCorrect = q.correctAnswer.toLowerCase();
                   const isCorrect = normalizedUser === normalizedCorrect;
+                  const isExpanded = expandedQuestions.includes(q.id);
 
                   return (
                     <div key={q.id} id={`question-${q.id}`} className="space-y-3 scroll-mt-8">
                       <div
+                        onClick={() => toggleQuestionExpansion(q.id)}
                         className={cn(
                           "p-5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4",
                           !isSubmitted
                             ? "bg-white border-slate-100 shadow-sm"
                             : isCorrect
-                              ? "bg-green-50/50 border-green-200"
-                              : "bg-red-50/50 border-red-200",
+                              ? "bg-green-50/50 border-green-200 cursor-pointer hover:bg-green-50"
+                              : "bg-red-50/50 border-red-200 cursor-pointer hover:bg-red-50",
                         )}
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-1">
@@ -781,9 +719,17 @@ function IELTSListeningPracticePage() {
                         {isSubmitted && (
                           <div className="flex flex-col items-end shrink-0 sm:min-w-[120px]">
                             {isCorrect ? (
-                              <div className="flex items-center gap-1.5 text-green-600 font-black text-[10px] bg-green-100/50 px-3 py-1 rounded-full border border-green-200">
-                                <CheckCircle2 className="size-3.5" />
-                                <span>ĐÚNG</span>
+                              <div className="flex flex-col items-end gap-1.5">
+                                <div className="flex items-center gap-1.5 text-green-600 font-black text-[10px] bg-green-100/50 px-3 py-1 rounded-full border border-green-200">
+                                  <CheckCircle2 className="size-3.5" />
+                                  <span>ĐÚNG</span>
+                                </div>
+                                {isExpanded && (
+                                  <div className="text-[10px] font-black text-green-700 bg-green-100 px-2.5 py-1 rounded-lg border border-green-200 flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-200">
+                                    <span className="text-green-500">Đ/A:</span>
+                                    <span>{q.correctAnswer.toUpperCase()}</span>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <div className="flex flex-col items-end gap-1.5">
@@ -791,26 +737,40 @@ function IELTSListeningPracticePage() {
                                   <XCircle className="size-3.5" />
                                   <span>SAI</span>
                                 </div>
-                                <div className="text-[10px] font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5">
-                                  <span className="text-slate-400">Đ/A:</span>
-                                  <span className="text-blue-600">
-                                    {q.correctAnswer.toUpperCase()}
-                                  </span>
-                                </div>
+                                {isExpanded && (
+                                  <div className="text-[10px] font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-200">
+                                    <span className="text-slate-400">Đ/A:</span>
+                                    <span className="text-blue-600">
+                                      {q.correctAnswer.toUpperCase()}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
                         )}
                       </div>
 
-                      {isSubmitted && !isCorrect && (
-                        <div className="flex items-start gap-3 px-2">
-                          <div className="mt-1 size-1.5 rounded-full bg-red-400 shrink-0" />
-                          <div className="space-y-1">
-                            <p className="text-xs font-bold text-red-500">
-                              Correct answer: <span className="uppercase">{q.correctAnswer}</span>
+                      {isSubmitted && isExpanded && (
+                        <div className="flex items-start gap-3 px-2 py-2 bg-white/50 rounded-2xl border border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                          <div
+                            className={cn(
+                              "mt-1.5 size-1.5 rounded-full shrink-0",
+                              isCorrect ? "bg-green-400" : "bg-red-400",
+                            )}
+                          />
+                          <div className="space-y-1.5">
+                            <p
+                              className={cn(
+                                "text-xs font-bold",
+                                isCorrect ? "text-green-600" : "text-red-500",
+                              )}
+                            >
+                              {isCorrect ? "Đáp án chính xác: " : "Đáp án đúng là: "}
+                              <span className="uppercase">{q.correctAnswer}</span>
                             </p>
                             <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                              <span className="font-bold text-slate-700 mr-1">Giải thích:</span>
                               {q.explanation}
                             </p>
                           </div>
@@ -831,13 +791,14 @@ function IELTSListeningPracticePage() {
           </div>
         </div>
 
-        {/* 4. Sticky Bottom Audio Player */}
-        <div className="absolute bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-24 flex items-center px-8">
-          <div className="flex-1 flex items-center gap-8">
+        {/* 4. Sticky Bottom Bar split into 2 sections */}
+        <div className="absolute bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 shadow-[0_-8px_30px_rgba(0,0,0,0.04)] h-28 flex">
+          {/* Section 1: Sticky Bottom Audio Player (Under Transcript) */}
+          <div className="w-full md:w-[45%] border-r border-slate-100 flex items-center px-6 gap-6 bg-white">
             <div className="flex items-center gap-4 shrink-0">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="size-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-200 hover:scale-105 transition-transform"
+                className="size-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-200 hover:scale-105 active:scale-95 transition-all"
               >
                 {isPlaying ? (
                   <Pause className="size-6 fill-current" />
@@ -845,21 +806,14 @@ function IELTSListeningPracticePage() {
                   <Play className="size-6 fill-current" />
                 )}
               </button>
-              <div className="hidden sm:block">
-                <div className="text-xs font-black text-slate-800">IELTS Listening Test</div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Section 1: Questions 1-5
-                </div>
-              </div>
             </div>
 
-            <div className="flex-1 flex flex-col gap-1.5">
+            <div className="flex-1 flex flex-col gap-1.5 min-w-0">
               <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <span>{formatTime(currentTime)}</span>
+                <span className="text-blue-600">{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
               <div className="relative group flex items-center h-4">
-                {/* Real hidden range for interaction */}
                 <input
                   type="range"
                   min="0"
@@ -874,16 +828,12 @@ function IELTSListeningPracticePage() {
                   }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                 />
-
-                {/* Styled Track */}
                 <div className="absolute inset-x-0 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 transition-all duration-75"
                     style={{ width: `${(currentTime / duration) * 100}%` }}
                   />
                 </div>
-
-                {/* Thumb */}
                 <div
                   className="absolute size-3.5 bg-white border-2 border-blue-500 rounded-full shadow-md z-10 pointer-events-none transition-all duration-75 group-hover:scale-125"
                   style={{ left: `calc(${(currentTime / duration) * 100}% - 7px)` }}
@@ -891,11 +841,65 @@ function IELTSListeningPracticePage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 shrink-0 text-slate-400">
-              <Volume2 className="size-5 hover:text-blue-500 cursor-pointer transition-colors" />
-              <div className="h-8 w-px bg-slate-100 mx-2" />
-              <div className="text-xs font-black text-slate-800 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+            <div className="hidden lg:flex items-center gap-3 shrink-0">
+              <div className="h-8 w-px bg-slate-100" />
+              <button className="text-[10px] font-black text-slate-800 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-100 hover:bg-slate-100 transition-all">
                 1.0x
+              </button>
+            </div>
+          </div>
+
+          {/* Section 2: Current Questions Status (Under Questions List) */}
+          <div className="flex-1 md:w-[55%] flex items-center px-8 bg-slate-50/50">
+            <div className="flex-1 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layout className="size-4 text-blue-600" />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Question Navigator
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-slate-800 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                    {userAnswers.filter((a) => a.trim().length > 0).length}/{QUESTIONS.length}{" "}
+                    Answered
+                  </span>
+                  <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+                  <div className="hidden sm:flex items-center gap-1">
+                    <div className="size-1.5 rounded-full bg-blue-600" />
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      Current
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {QUESTIONS.map((q, i) => {
+                  const isAnswered = userAnswers[i].trim().length > 0;
+                  const isCorrect =
+                    isSubmitted &&
+                    userAnswers[i].trim().toLowerCase() === q.correctAnswer.toLowerCase();
+
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => scrollToQuestion(q.id)}
+                      className={cn(
+                        "flex-1 h-9 rounded-xl flex items-center justify-center text-xs font-black transition-all border-2 mr-2",
+                        !isSubmitted
+                          ? isAnswered
+                            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100 scale-105"
+                            : "bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-600"
+                          : isCorrect
+                            ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-100"
+                            : "bg-red-500 border-red-500 text-white shadow-lg shadow-red-100",
+                      )}
+                    >
+                      {q.id}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
