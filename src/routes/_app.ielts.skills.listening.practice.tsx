@@ -186,6 +186,7 @@ function IELTSListeningPracticePage() {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [scratchpadText, setScratchpadText] = useState("");
   const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
+  const [lookupData, setLookupData] = useState<{ word: string; pos: { t: number; l: number } } | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const duration = 90; // 01:30
 
@@ -292,49 +293,32 @@ function IELTSListeningPracticePage() {
 
   const isAnyFilled = userAnswers.some((ans) => ans.trim().length > 0);
 
-  const toggleHighlight = () => {
+  const toggleHighlight = (color: (typeof HIGHLIGHT_COLORS)[0]) => {
+    if (!isHighlighterMode) return;
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-      return;
-    }
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
 
     const range = selection.getRangeAt(0);
-    const container = range.commonAncestorContainer;
-    const parentElement =
-      container.nodeType === 3 ? container.parentElement : (container as HTMLElement);
+    const span = document.createElement("span");
+    span.className = cn(color.lightBg, color.text, "rounded-sm px-0.5");
+    range.surroundContents(span);
+    selection.removeAllRanges();
+  };
 
-    // Check if we are already inside a highlight
-    const highlightParent = parentElement?.closest(".practice-highlight");
+  const handleDoubleClick = () => {
+    const selection = window.getSelection();
+    const word = selection?.toString().trim();
 
-    if (highlightParent) {
-      // Unhighlight: Remove the span and keep text
-      const parent = highlightParent.parentNode;
-      while (highlightParent.firstChild) {
-        parent?.insertBefore(highlightParent.firstChild, highlightParent);
-      }
-      parent?.removeChild(highlightParent);
-    } else {
-      // Highlight: Wrap selection in a span
-      const span = document.createElement("span");
-      span.className = `practice-highlight ${selectedColor.bg} text-slate-900 rounded-sm px-0.5 transition-colors cursor-pointer ring-1 ${selectedColor.ring}`;
-
-      try {
-        // Basic wrap
-        range.surroundContents(span);
-      } catch (err) {
-        // Fallback: If complex, wrap in a way that works for most text nodes
-        try {
-          const content = range.extractContents();
-          span.appendChild(content);
-          range.insertNode(span);
-        } catch (innerErr) {
-          console.error("Highlight failed", innerErr);
-        }
+    if (word && word.length > 0 && !word.includes(" ")) {
+      const range = selection?.getRangeAt(0);
+      const rect = range?.getBoundingClientRect();
+      if (rect) {
+        setLookupData({
+          word,
+          pos: { t: rect.top, l: rect.left + rect.width / 2 },
+        });
       }
     }
-
-    // Clear selection after highlighting to give visual feedback
-    selection.removeAllRanges();
   };
 
   const scrollToQuestion = (id: number) => {
@@ -364,7 +348,7 @@ function IELTSListeningPracticePage() {
       if (isModifier && isH) {
         e.preventDefault();
         e.stopPropagation();
-        toggleHighlight();
+        toggleHighlight(selectedColor);
       }
     };
 
@@ -611,11 +595,8 @@ function IELTSListeningPracticePage() {
                 "flex-1 overflow-y-auto p-8 pb-32 relative",
                 isHighlighterMode && "cursor-text",
               )}
-              onMouseUp={() => {
-                if (isHighlighterMode) {
-                  toggleHighlight();
-                }
-              }}
+              onMouseUp={() => toggleHighlight(selectedColor)}
+              onDoubleClick={handleDoubleClick}
             >
               {isTranscriptVisible ? (
                 <div className="space-y-6 text-sm leading-relaxed text-slate-600 font-medium animate-in fade-in duration-500">
@@ -1076,6 +1057,52 @@ function IELTSListeningPracticePage() {
           </div>
         </div>
       </div>
+
+      {/* Dictionary Tooltip */}
+      {lookupData && (
+        <>
+          <div className="fixed inset-0 z-[200]" onClick={() => setLookupData(null)} />
+          <div
+            className="fixed z-[210] w-64 bg-slate-900 text-white rounded-2xl shadow-2xl p-4 animate-in fade-in zoom-in-95 duration-200"
+            style={{
+              top: `${lookupData.pos.t - 10}px`,
+              left: `${lookupData.pos.l}px`,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-black text-blue-400">{lookupData.word}</span>
+              <button
+                onClick={() => setLookupData(null)}
+                className="size-5 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+              >
+                <X className="size-3" />
+              </button>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded border border-blue-500/30 uppercase">
+                  noun
+                </span>
+                <span className="text-[10px] text-white/50 italic">/ˈwɜːrd/</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-white/80">
+                A single distinct meaningful element of speech or writing, used with others to form a
+                sentence.
+              </p>
+              <div className="pt-2 border-t border-white/10">
+                <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-1">
+                  Examples
+                </p>
+                <p className="text-[10px] text-white/60 italic leading-snug">
+                  "I don't have the words to express my gratitude."
+                </p>
+              </div>
+            </div>
+            <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 rotate-45" />
+          </div>
+        </>
+      )}
 
       {/* Help Modal */}
       {isHelpModalOpen && (
