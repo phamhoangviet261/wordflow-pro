@@ -430,7 +430,7 @@ function IELTSListeningPracticePage() {
               </div>
             )}
 
-            <div className="relative flex items-center">
+            <div className="relative hidden lg:flex items-center">
               <button
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-l-xl font-bold text-xs border border-r-0 transition-all shadow-sm",
@@ -520,7 +520,7 @@ function IELTSListeningPracticePage() {
                 <button
                   onClick={() => setIsHighlighterMode(!isHighlighterMode)}
                   className={cn(
-                    "px-3 py-1.5 rounded-full text-[10px] font-black transition-all border flex items-center gap-1.5 shadow-sm",
+                    "hidden lg:flex px-3 py-1.5 rounded-full text-[10px] font-black transition-all border items-center gap-1.5 shadow-sm",
                     isHighlighterMode
                       ? "bg-yellow-400 text-yellow-900 border-yellow-500 shadow-yellow-100"
                       : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
